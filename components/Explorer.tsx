@@ -9,11 +9,15 @@ import { BoardWindow } from "@/components/BoardWindow";
 import { MasterPanelWindow, SynopsisWindow } from "@/components/MasterPanelWindow";
 import { ReferenceWindow } from "@/components/ReferenceWindow";
 import { BroadcastWindow } from "@/components/BroadcastWindow";
+import { WallpaperWindow } from "@/components/WallpaperWindow";
+import { useWallpaper } from "@/lib/campaign/WallpaperProvider";
+import { wallpaperStyle } from "@/lib/wallpaper";
 import { COLORS } from "@/lib/game/rules";
 
 export function Explorer() {
   const { campaign, isGM, meId, metaOf, directory, characters, totalUnread } = useCampaign();
   const windows = useWindows();
+  const { url: wallpaper } = useWallpaper();
 
   // `directory` lista todos os personagens da mesa (nome + arquétipo);
   // `characters` só os que a RLS deixou passar. A diferença vira pasta trancada.
@@ -35,6 +39,14 @@ export function Explorer() {
           <span className="role-badge" style={{ color: isGM ? "#e6543c" : "#8fbf9a" }}>
             {isGM ? "Acesso total" : "Agente de campo"}
           </span>
+          <button
+            className="logout-btn"
+            onClick={() =>
+              windows.open("wallpaper", "Papel de Parede", <WallpaperWindow />)
+            }
+          >
+            🖼 Papel de parede
+          </button>
           {isGM && (
             <button
               className="logout-btn"
@@ -60,7 +72,10 @@ export function Explorer() {
         </div>
       </div>
 
-      <div className="desktop">
+      <div
+        className={`desktop ${wallpaper ? "has-wallpaper" : ""}`}
+        style={wallpaper ? wallpaperStyle(wallpaper) : undefined}
+      >
         {directory.map((entry) =>
           visibleIds.has(entry.id) ? (
             <Folder

@@ -578,8 +578,16 @@ export function CampaignProvider({
       timers.set(
         id,
         setTimeout(() => {
-          void supabase.from("evidence_cards").update({ x, y }).eq("id", id);
           timers.delete(id);
+          // O builder do postgrest só dispara o fetch dentro do `.then()` —
+          // sem ele a posição nunca chegava no banco (e nem no Realtime).
+          void supabase
+            .from("evidence_cards")
+            .update({ x, y })
+            .eq("id", id)
+            .then(({ error }) => {
+              if (error) console.error("moveCard", error);
+            });
         }, 220),
       );
     },

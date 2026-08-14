@@ -90,6 +90,31 @@ select:focus, .login-field input:focus { border-color: var(--accent); }
 
 .desktop {
   flex: 1; padding: 28px; display: flex; flex-wrap: wrap; gap: 26px; align-content: flex-start;
+  /* + papel de parede por link */
+  position: relative; background-size: cover; background-position: center center;
+  background-repeat: no-repeat;
+}
+/* + véu escuro: os rótulos das pastas são claros e precisam continuar legíveis
+   sobre qualquer imagem que a pessoa colar. */
+.desktop.has-wallpaper::before {
+  content: ""; position: absolute; inset: 0; background: rgba(20,17,13,0.55); pointer-events: none;
+}
+.desktop > * { position: relative; z-index: 1; }
+
+/* + janela de papel de parede */
+.wallpaper-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 12px; }
+.wallpaper-row input { flex: 1 1 260px; min-width: 0; }
+.wallpaper-reset { background: transparent; border: 1px solid var(--paper-edge); color: var(--ink-soft); }
+.wallpaper-presets { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+.wallpaper-presets button {
+  background: var(--paper-dark); border: 1px solid var(--paper-edge); color: var(--ink);
+  font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 1px; padding: 5px 10px;
+}
+.wallpaper-preview {
+  height: 190px; border: 1px dashed var(--paper-edge); background: var(--board);
+  background-size: cover; background-position: center center; background-repeat: no-repeat;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #8a8271; text-align: center;
 }
 .folder {
   width: 104px; display: flex; flex-direction: column; align-items: center; gap: 6px;
@@ -139,11 +164,39 @@ select:focus, .login-field input:focus { border-color: var(--accent); }
   background: var(--redact); color: var(--paper); padding: 9px 14px;
   display: flex; align-items: center; justify-content: space-between;
   font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; letter-spacing: 1px;
+  /* + arrastar pela barra */
+  cursor: grab; user-select: none; touch-action: none; flex: 0 0 auto;
 }
 .win-bar .win-title { display: flex; align-items: center; gap: 8px; text-transform: uppercase; }
-.win-close { background: none; border: 1px solid #695f4d; color: var(--paper); width: 22px; height: 22px; line-height: 1; font-size: 13px; }
+.win-close { background: none; border: 1px solid #695f4d; color: var(--paper); width: 22px; height: 22px; line-height: 1; font-size: 13px; cursor: pointer; }
 .win-close:hover { background: var(--hard); border-color: var(--hard); }
-.win-body { overflow-y: auto; padding: 20px 22px 26px; }
+/* + `flex: 1` + `min-height: 0` pra que o corpo role dentro da altura do resize */
+.win-body { overflow-y: auto; padding: 20px 22px 26px; flex: 1 1 auto; min-height: 0; }
+
+/* + alças de redimensionamento */
+.win-resize { position: absolute; touch-action: none; }
+.win-resize.e { top: 0; right: -3px; width: 8px; height: 100%; cursor: ew-resize; }
+.win-resize.s { bottom: -3px; left: 0; width: 100%; height: 8px; cursor: ns-resize; }
+.win-resize.se { bottom: -3px; right: -3px; width: 16px; height: 16px; cursor: nwse-resize; z-index: 1; }
+.win-resize.se::after {
+  content: ""; position: absolute; right: 4px; bottom: 4px; width: 7px; height: 7px;
+  border-right: 2px solid var(--ink-soft); border-bottom: 2px solid var(--ink-soft); opacity: 0.7;
+}
+/* + trava o cursor e a seleção durante o gesto, mesmo saindo da janela */
+body.win-dragging { user-select: none; cursor: grabbing; }
+body.win-dragging .win-bar { cursor: grabbing; }
+
+/* + `.sized` = janela com altura explícita (foi arrastada/redimensionada).
+   Aí o painel que "enche a janela" passa a acompanhar o resize em vez de ficar
+   preso em vh. O `:has()` mantém o Dossiê no fluxo normal de documento. */
+.win.sized .win-body:has(> .wa-wrap),
+.win.sized .win-body:has(> .cork-board) { display: flex; flex-direction: column; }
+/* base 0 pra crescer no espaço que sobra, e não a partir do conteúdo (o mural
+   tem 1000px de altura interna e empurraria a janela toda). */
+.win.sized .wa-wrap { height: auto; flex: 1 1 0; min-height: 200px; }
+.win.sized .cork-board { height: auto; flex: 1 1 0; min-height: 200px; }
+/* o selo do jogador é inline-block: como flex item ele esticaria a borda */
+.win.sized .readonly-badge { align-self: flex-start; }
 
 /* ---------- DOSSIE (character sheet) ---------- */
 .stamp2 {
@@ -372,4 +425,7 @@ table.ref-table td, table.ref-table th { border-bottom: 1px dotted var(--paper-e
   .id-row { grid-template-columns: 1fr; }
   .bottom-row { grid-template-columns: 1fr; }
   .win { width: 100%; max-height: 100vh; top: 0; height: 100vh; }
+  /* + no mobile a janela é tela cheia: sem arrastar, sem redimensionar */
+  .win-bar { cursor: default; touch-action: auto; }
+  .win-resize { display: none; }
 }

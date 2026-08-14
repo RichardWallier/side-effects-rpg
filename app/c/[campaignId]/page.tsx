@@ -2,6 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import { requireUser } from "@/lib/supabase/server";
 import { loadCampaignSnapshot } from "@/lib/campaign/snapshot";
 import { CampaignProvider } from "@/lib/campaign/CampaignProvider";
+import { WallpaperProvider } from "@/lib/campaign/WallpaperProvider";
 import { WindowManager } from "@/components/windows/WindowManager";
 import { Explorer } from "@/components/Explorer";
 
@@ -21,9 +22,11 @@ export default async function CampaignPage({
 
   return (
     <CampaignProvider snapshot={snapshot}>
-      <WindowManager>
-        <Explorer />
-      </WindowManager>
+      <WallpaperProvider campaignId={campaignId}>
+        <WindowManager>
+          <Explorer />
+        </WindowManager>
+      </WallpaperProvider>
     </CampaignProvider>
   );
 }

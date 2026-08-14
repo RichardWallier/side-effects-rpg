@@ -161,6 +161,7 @@ function Conversation({ channel, onBack }: { channel: ChatChannel; onBack: () =>
   const [draft, setDraft] = useState("");
   const [rollOpen, setRollOpen] = useState(false);
   const scrollRef = useRef<HTMLDivElement | null>(null);
+  const inputRef = useRef<HTMLInputElement | null>(null);
 
   const messages = messagesOf(channel.id);
   const intercept = isIntercept(channel);
@@ -170,6 +171,14 @@ function Conversation({ channel, onBack }: { channel: ChatChannel; onBack: () =>
     const el = scrollRef.current;
     if (el) el.scrollTop = el.scrollHeight;
   }, [messages.length]);
+
+  // Abrir a conversa já deixa o cursor na caixa de escrita. Só no desktop —
+  // no mobile isso subiria o teclado virtual em cima da conversa.
+  // Este componente tem `key` por canal, então remonta a cada troca.
+  useEffect(() => {
+    if (window.matchMedia("(max-width: 760px)").matches) return;
+    inputRef.current?.focus();
+  }, []);
 
   let headerTitle: string;
   let headerSub = "";
@@ -247,6 +256,7 @@ function Conversation({ channel, onBack }: { channel: ChatChannel; onBack: () =>
               🎲
             </button>
             <input
+              ref={inputRef}
               type="text"
               placeholder="Escrever mensagem..."
               value={draft}
