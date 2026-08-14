@@ -1,0 +1,1431 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Efeitos Colaterais — Sistema de Caso</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Special+Elite&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --board: #211d17;
+    --board-line: #33291f;
+    --paper: #efe6d0;
+    --paper-dark: #e2d6b8;
+    --paper-edge: #c9bc98;
+    --ink: #2a2419;
+    --ink-soft: #5c5340;
+    --redact: #1a1712;
+    --hard: #8f2d2d;
+    --intel: #b8860b;
+    --soft: #2e6b64;
+    --accent: var(--soft);
+    --accent-dim: #2e6b6433;
+    --amber: #d8a13a;
+    --ok: #3d7a4a;
+    --bad: #a33;
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    margin:0;
+    min-height:100vh;
+    background:
+      radial-gradient(ellipse at 20% 10%, rgba(255,255,255,0.03), transparent 40%),
+      repeating-linear-gradient(45deg, var(--board-line) 0 1px, transparent 1px 26px),
+      repeating-linear-gradient(-45deg, var(--board-line) 0 1px, transparent 1px 26px),
+      var(--board);
+    font-family:'IBM Plex Sans', sans-serif;
+    color:var(--ink);
+  }
+  ::selection{ background: var(--amber); color:var(--redact); }
+  button{ font-family:inherit; cursor:pointer; }
+  input,textarea{ font-family:inherit; }
+
+  /* ---------- LOGIN ---------- */
+  #loginScreen{
+    min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px;
+  }
+  .login-card{
+    width:100%; max-width:420px;
+    background: var(--paper);
+    box-shadow: 0 18px 40px rgba(0,0,0,0.5), 0 2px 0 rgba(255,255,255,0.15) inset;
+    padding: 30px 28px;
+    position:relative;
+  }
+  .login-card::before{
+    content:"CONFIDENCIAL";
+    position:absolute; top:18px; right:20px;
+    border:2px solid var(--hard); color:var(--hard);
+    font-family:'Special Elite', monospace; font-size:10px; letter-spacing:2px;
+    padding:3px 7px; transform:rotate(6deg); opacity:0.7; mix-blend-mode:multiply;
+  }
+  .login-kicker{ font-family:'IBM Plex Mono', monospace; font-size:11px; letter-spacing:3px; color:var(--ink-soft); text-transform:uppercase;}
+  .login-title{ font-family:'Special Elite', monospace; font-size:26px; margin:2px 0 20px;}
+  .login-field{ margin-bottom:14px; display:flex; flex-direction:column; gap:6px;}
+  .login-field label{ font-family:'IBM Plex Mono', monospace; font-size:10px; letter-spacing:1.5px; text-transform:uppercase; color:var(--ink-soft);}
+  select, .login-field input{
+    font-size:14px; padding:9px 8px; background:rgba(255,255,255,0.4);
+    border:1px solid var(--paper-edge); color:var(--ink); outline:none;
+  }
+  select:focus, .login-field input:focus{ border-color:var(--accent); }
+  .login-btn{
+    width:100%; margin-top:6px; background:var(--ink); color:var(--paper); border:none;
+    padding:12px; font-family:'IBM Plex Mono', monospace; letter-spacing:1.5px; font-size:12px;
+    text-transform:uppercase;
+  }
+  .login-btn:hover{ background:var(--soft); }
+  .login-hint{ margin-top:14px; font-family:'IBM Plex Mono', monospace; font-size:10.5px; color:var(--ink-soft); line-height:1.6; border-top:1px dashed var(--paper-edge); padding-top:10px;}
+  .login-error{ color:var(--hard); font-size:12px; font-family:'IBM Plex Mono',monospace; margin-top:8px; display:none;}
+
+  /* ---------- EXPLORER SHELL ---------- */
+  #explorerScreen{ display:none; min-height:100vh; flex-direction:column; }
+  .taskbar{
+    background: var(--redact); color:var(--paper); padding:10px 16px;
+    display:flex; align-items:center; justify-content:space-between; gap:12px;
+    border-bottom: 2px solid #000; flex-wrap:wrap;
+  }
+  .taskbar .brand{ font-family:'Special Elite', monospace; font-size:15px; letter-spacing:1px; display:flex; align-items:center; gap:10px;}
+  .brand .dot{ width:8px;height:8px;border-radius:50%; background:var(--hard); box-shadow:0 0 6px var(--hard); }
+  .taskbar .who{ font-family:'IBM Plex Mono', monospace; font-size:11px; letter-spacing:1px; display:flex; align-items:center; gap:10px;}
+  .role-badge{ padding:3px 8px; border:1px solid currentColor; font-size:10px; letter-spacing:1px; text-transform:uppercase;}
+  .logout-btn{ background:transparent; border:1px solid #695f4d; color:var(--paper); padding:6px 10px; font-size:11px; font-family:'IBM Plex Mono',monospace;}
+  .logout-btn:hover{ border-color:var(--hard); color:var(--hard); }
+
+  .desktop{
+    flex:1; padding: 28px; display:flex; flex-wrap:wrap; gap: 26px; align-content:flex-start;
+  }
+  .folder{
+    width:104px; display:flex; flex-direction:column; align-items:center; gap:6px;
+    text-align:center; background:none; border:none; color:var(--paper); position:relative;
+  }
+  .folder-icon{
+    width:72px; height:54px; position:relative;
+  }
+  .folder-icon::before{ /* tab */
+    content:""; position:absolute; top:-8px; left:6px; width:30px; height:10px;
+    background: var(--fcolor, var(--amber)); border-radius: 3px 3px 0 0;
+  }
+  .folder-icon::after{
+    content:""; position:absolute; top:0; left:0; right:0; bottom:0;
+    background: var(--fcolor, var(--amber));
+    box-shadow: 0 4px 8px rgba(0,0,0,0.5);
+    border-radius: 2px;
+  }
+  .folder-label{ font-family:'IBM Plex Mono', monospace; font-size:11.5px; letter-spacing:0.4px; line-height:1.3;}
+  .folder-sub{ font-size:9.5px; color:#a89f8c; letter-spacing:1px; text-transform:uppercase;}
+  .folder:hover .folder-icon::after{ filter:brightness(1.15); }
+  .folder:active .folder-icon::after{ filter:brightness(0.9); }
+  .folder-icon.locked::after{ opacity:0.5; }
+  .folder-icon.locked::before{ opacity:0.5; }
+  .folder.locked-folder .folder-label{ opacity:0.6; }
+  .folder-sub.locked-sub{ color:#c98; }
+
+  .folder-badge{ position:absolute; top:-7px; right:6px; background:var(--hard); color:#fff; font-size:10px; min-width:16px; height:16px; line-height:16px; text-align:center; border-radius:9px; font-family:'IBM Plex Mono',monospace; padding:0 4px; box-shadow:0 2px 4px rgba(0,0,0,0.4);}
+
+  .wa-avatar-wrap{ position:relative; flex-shrink:0;}
+  .presence-dot{ position:absolute; width:10px; height:10px; border-radius:50%; bottom:-1px; right:-1px; border:2px solid var(--paper); background:#8a8271;}
+  .presence-dot.online{ background:#3fb552;}
+  .wa-item-name.unread{ font-weight:700; color:var(--ink);}
+  .wa-badge-count{ background:var(--accent); color:#fff; font-size:10px; min-width:16px; height:16px; line-height:16px; text-align:center; border-radius:9px; padding:0 4px; font-family:'IBM Plex Mono',monospace;}
+
+  .share-panel{ margin-bottom:16px; }
+  .share-check{ display:inline-flex; align-items:center; gap:6px; font-family:'IBM Plex Mono', monospace; font-size:11.5px; margin-right:16px; margin-bottom:6px; color:var(--ink-soft);}
+  .share-check input{ accent-color: var(--accent); }
+
+  /* ---------- WINDOWS ---------- */
+  #windowsLayer{ position:fixed; inset:0; pointer-events:none; z-index:50; }
+  .win{
+    pointer-events:auto;
+    position:absolute; top:6%; left:50%; transform:translateX(-50%);
+    width:min(920px, 94vw); max-height:88vh; display:flex; flex-direction:column;
+    background:var(--paper); box-shadow:0 25px 60px rgba(0,0,0,0.6);
+  }
+  .win-bar{
+    background:var(--redact); color:var(--paper); padding:9px 14px;
+    display:flex; align-items:center; justify-content:space-between;
+    font-family:'IBM Plex Mono', monospace; font-size:11.5px; letter-spacing:1px;
+  }
+  .win-bar .win-title{ display:flex; align-items:center; gap:8px; text-transform:uppercase; }
+  .win-close{ background:none; border:1px solid #695f4d; color:var(--paper); width:22px; height:22px; line-height:1; font-size:13px;}
+  .win-close:hover{ background:var(--hard); border-color:var(--hard); }
+  .win-body{ overflow-y:auto; padding: 20px 22px 26px; }
+
+  /* ---------- DOSSIE (character sheet) ---------- */
+  .stamp2{
+    position:absolute; top: 14px; right: 20px;
+    border: 3px solid var(--hard); color: var(--hard);
+    font-family:'Special Elite', monospace; font-size: 11px; letter-spacing: 2px;
+    padding: 4px 9px; transform: rotate(7deg); opacity:0.7; mix-blend-mode: multiply; pointer-events:none;
+  }
+  header.top{ display:flex; justify-content:space-between; align-items:flex-end; border-bottom:2px solid var(--ink); padding-bottom:10px; margin-bottom:18px; gap:16px; flex-wrap:wrap; position:relative;}
+  .kicker{ font-family:'IBM Plex Mono', monospace; font-size:11px; letter-spacing:3px; color:var(--ink-soft); text-transform:uppercase;}
+  h1.sheetTitle{ font-family:'Special Elite', monospace; font-size:26px; margin:2px 0 0;}
+  .arche-tag{ font-family:'IBM Plex Mono', monospace; font-size:11px; letter-spacing:1px; text-transform:uppercase; padding:6px 12px; color:var(--paper); background:var(--cat-color); }
+
+  .id-row{ display:grid; grid-template-columns: 1.4fr 1fr; gap:14px; margin-bottom:18px;}
+  .field{ display:flex; flex-direction:column; gap:4px;}
+  .field label{ font-family:'IBM Plex Mono', monospace; font-size:10px; letter-spacing:1.5px; text-transform:uppercase; color:var(--ink-soft);}
+  .field input, .field textarea{ font-size:14px; background:transparent; border:none; border-bottom:1px dashed var(--paper-edge); padding:4px 2px; color:var(--ink); outline:none; width:100%;}
+  .field input:focus, .field textarea:focus{ border-bottom-color:var(--accent);}
+  .field textarea{ resize:vertical;}
+
+  .grid-main{ display:grid; grid-template-columns: 1fr 1.25fr 0.95fr; gap:16px;}
+  .panel{ background: rgba(255,255,255,0.28); border:1px solid var(--paper-edge); padding:13px 13px 15px;}
+  .panel h2{ font-family:'Special Elite', monospace; font-size:12.5px; letter-spacing:1.5px; text-transform:uppercase; margin:0 0 10px; padding-bottom:6px; border-bottom:1px solid var(--ink);}
+
+  .attr{ display:grid; grid-template-columns:1fr auto auto; align-items:center; gap:8px; padding:6px 0; border-bottom:1px dotted var(--paper-edge); font-family:'IBM Plex Mono', monospace;}
+  .attr:last-child{ border-bottom:none;}
+  .attr-name{ font-family:'IBM Plex Sans', sans-serif; font-size:12.5px;}
+  .attr-val{ width:28px; text-align:center; font-size:13px; border:1px solid var(--ink); background:var(--paper); padding:2px 0;}
+  .attr-mod{ width:32px; text-align:center; font-size:12.5px; font-weight:600; color:var(--accent);}
+
+  .skill-cat{ margin-bottom:9px;}
+  .skill-cat-title{ font-family:'IBM Plex Mono', monospace; font-size:10px; letter-spacing:1.5px; text-transform:uppercase; padding:2px 6px; display:inline-block; margin-bottom:5px; color:var(--paper); background:var(--ink-soft);}
+  .skill-row{ display:flex; justify-content:space-between; align-items:center; font-size:12.5px; padding:2px 0;}
+  .skill-toggle{ display:flex; gap:3px;}
+  .dot{ width:10px; height:10px; border-radius:50%; border:1.4px solid var(--ink); cursor:pointer; background:transparent;}
+  .dot.on{ background:var(--accent); border-color:var(--accent);}
+
+  .gauge-label{ font-family:'IBM Plex Mono', monospace; font-size:10px; color:var(--ink-soft); line-height:1.5;}
+  .gauge-wrap{ text-align:center;}
+  .gauge-value{ font-family:'Special Elite', monospace; font-size:26px; margin-top:-6px;}
+  .gauge-tier{ font-family:'IBM Plex Mono', monospace; font-size:11px; letter-spacing:1.5px; margin-bottom:6px;}
+  input[type=range]{ width:100%; }
+  .pool{ display:flex; gap:8px; margin:6px 0;}
+  .pool-box{ width:22px; height:22px; border:1.6px solid var(--ink); cursor:pointer; background:var(--paper);}
+  .pool-box.spent{ background:var(--redact); }
+
+  .wound-track{ display:grid; grid-template-columns:repeat(5,1fr); gap:5px;}
+  .wound-step{ font-family:'IBM Plex Mono', monospace; font-size:9.5px; text-align:center; letter-spacing:0.3px; padding:7px 3px; border:1.3px solid var(--ink); cursor:pointer; background:transparent; color:var(--ink);}
+  .wound-step.current{ background:var(--hard); border-color:var(--hard); color:var(--paper);}
+  .bottom-row{ display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:16px;}
+  .readonly-badge{ font-family:'IBM Plex Mono', monospace; font-size:10px; color:var(--ink-soft); letter-spacing:1px; margin-bottom:10px; display:inline-block; border:1px dashed var(--paper-edge); padding:3px 8px;}
+
+  .dossie-wrap{ position:relative; overflow:hidden; z-index:0; }
+  .dossie-wrap::before{
+    content:''; position:absolute; inset:0; pointer-events:none; z-index:-1;
+  }
+  .dossie-wrap::after{
+    content:''; position:absolute; top:42%; left:50%; transform:translate(-50%,-50%) rotate(-16deg);
+    font-family:'Special Elite', monospace; letter-spacing:6px; white-space:nowrap;
+    pointer-events:none; z-index:-1; opacity:0;
+  }
+  .dossie-wrap.tier-corrupto::before{
+    background:
+      radial-gradient(circle at 12% 88%, rgba(15,8,8,0.4), transparent 42%),
+      radial-gradient(circle at 92% 8%, rgba(15,8,8,0.28), transparent 38%),
+      radial-gradient(circle at 55% 95%, rgba(15,8,8,0.22), transparent 30%);
+    mix-blend-mode:multiply;
+  }
+  .dossie-wrap.tier-corrupto::after{ content:'CORROMPIDO'; font-size:52px; color:var(--hard); opacity:0.14; }
+  .dossie-wrap.tier-questionavel::before{
+    background: radial-gradient(circle at 90% 10%, rgba(15,8,8,0.14), transparent 35%);
+    mix-blend-mode:multiply;
+  }
+  .dossie-wrap.tier-exemplar::before{
+    box-shadow: inset 0 0 70px 10px rgba(216,161,58,0.28);
+  }
+  .dossie-wrap.tier-exemplar::after{ content:'EXEMPLAR'; font-size:52px; color:var(--intel); opacity:0.13; }
+  .dossie-wrap.tier-integro::before{
+    box-shadow: inset 0 0 40px 6px rgba(46,107,100,0.14);
+  }
+
+  /* ---------- MASTER PANEL ---------- */
+  .master-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:12px; margin-bottom:20px;}
+  .mini-card{ background:rgba(255,255,255,0.3); border:1px solid var(--paper-edge); padding:12px; border-top:4px solid var(--cat-color); cursor:pointer;}
+  .mini-card:hover{ background:rgba(255,255,255,0.45); }
+  .mini-name{ font-family:'Special Elite', monospace; font-size:15px;}
+  .mini-occ{ font-family:'IBM Plex Mono', monospace; font-size:10px; color:var(--ink-soft); margin-bottom:8px;}
+  .mini-row{ display:flex; justify-content:space-between; font-size:11.5px; padding:2px 0; font-family:'IBM Plex Mono', monospace;}
+  .mini-wound{ display:inline-block; padding:2px 7px; font-size:10px; letter-spacing:0.5px; margin-top:4px;}
+  .w0{background:#3d7a4a44;} .w1{background:#d8a13a55;} .w2{background:#c9793355;} .w3{background:#a3333355;} .w4{background:#00000055;}
+
+  .act-box{ background:rgba(255,255,255,0.3); border:1px solid var(--paper-edge); padding:14px; margin-bottom:16px;}
+  .act-box select{ margin-bottom:10px; }
+
+  /* ---------- REFERENCE ---------- */
+  .ref-block{ margin-bottom:16px; background:rgba(255,255,255,0.3); border:1px solid var(--paper-edge); padding:13px 14px;}
+  .ref-block h3{ font-family:'Special Elite', monospace; font-size:14px; margin:0 0 8px; border-bottom:1px solid var(--ink); padding-bottom:5px;}
+  .formula{ font-family:'IBM Plex Mono', monospace; font-size:15px; text-align:center; padding:10px; background:var(--paper-dark); border:1px dashed var(--ink); margin-bottom:8px;}
+  table.ref-table{ width:100%; border-collapse:collapse; font-size:12.5px; font-family:'IBM Plex Mono', monospace;}
+  table.ref-table td, table.ref-table th{ border-bottom:1px dotted var(--paper-edge); padding:5px 4px; text-align:left;}
+  .note-small{ font-size:10.5px; color:var(--ink-soft); margin-top:6px;}
+
+  /* ---------- CHAT (estilo WhatsApp) ---------- */
+  .wa-wrap{ display:flex; height:66vh; border:1px solid var(--paper-edge); background:var(--paper); position:relative; overflow:hidden;}
+  .wa-list-pane{ width:280px; flex-shrink:0; border-right:1px solid var(--paper-edge); display:flex; flex-direction:column; overflow-y:auto; background:var(--paper);}
+  .wa-section-label{ font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:1.5px; text-transform:uppercase; color:var(--ink-soft); padding:10px 12px 4px;}
+  .wa-section-label.intercept{ color:var(--hard); display:flex; align-items:center; gap:5px;}
+  .wa-item{ display:flex; gap:10px; padding:10px 12px; cursor:pointer; border-bottom:1px solid rgba(0,0,0,0.06); align-items:center;}
+  .wa-item:hover{ background:rgba(0,0,0,0.04);}
+  .wa-item.active{ background:var(--accent-dim);}
+  .wa-item.wa-item-intercept{ border-left:3px solid var(--hard); background:#8f2d2d0d;}
+  .wa-avatar{ width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center; color:#fff; font-family:'IBM Plex Mono',monospace; font-size:14px; font-weight:600; flex-shrink:0;}
+  .wa-avatar.small{ width:32px; height:32px; font-size:12px;}
+  .wa-item-body{ flex:1; min-width:0;}
+  .wa-item-top{ display:flex; justify-content:space-between; gap:6px;}
+  .wa-item-name{ font-size:13.5px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .wa-item-time{ font-size:10px; color:var(--ink-soft); flex-shrink:0;}
+  .wa-item-preview{ font-size:12px; color:var(--ink-soft); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .wa-item-tag{ font-size:9px; color:var(--hard); letter-spacing:0.5px;}
+
+  .wa-convo-pane{ flex:1; display:flex; flex-direction:column; min-width:0;}
+  .wa-convo-header{ display:flex; align-items:center; gap:10px; padding:9px 14px; background:var(--soft); color:#fff;}
+  .wa-convo-header.intercept{ background:var(--hard);}
+  .wa-back{ display:none; background:none; border:none; color:#fff; font-size:18px; cursor:pointer; padding:0 4px;}
+  .wa-convo-title{ font-family:'IBM Plex Mono',monospace; font-size:13px; letter-spacing:0.5px;}
+  .wa-convo-sub{ font-size:10px; opacity:0.85; font-family:'IBM Plex Mono',monospace;}
+  .wa-msgs{ flex:1; overflow-y:auto; padding:16px; display:flex; flex-direction:column; gap:6px;
+    background: repeating-linear-gradient(0deg, rgba(0,0,0,0.02) 0 1px, transparent 1px 22px), #e9e2d3;}
+  .wa-msgs.intercept{ background: repeating-linear-gradient(0deg, rgba(143,45,45,0.05) 0 1px, transparent 1px 22px), #ece0e0;}
+  .wa-bubble{ max-width:72%; padding:7px 10px 6px; border-radius:8px; font-size:13.5px; line-height:1.4; position:relative; box-shadow:0 1px 1px rgba(0,0,0,0.15);}
+  .wa-bubble.in{ align-self:flex-start; background:#fff; border-top-left-radius:2px;}
+  .wa-bubble.out{ align-self:flex-end; background:#d9fdd3; border-top-right-radius:2px;}
+  .wa-bubble.intercepted{ background:#f2e4e4; border:1px dashed var(--hard);}
+  .wa-bubble-sender{ font-size:10.5px; font-weight:600; margin-bottom:2px; font-family:'IBM Plex Mono',monospace;}
+  .wa-bubble-time{ font-size:9.5px; color:#00000066; text-align:right; margin-top:2px;}
+  .wa-input-row{ display:flex; border-top:1px solid var(--paper-edge); background:var(--paper);}
+  .wa-input-row input{ flex:1; border:none; padding:12px; font-size:13.5px; background:transparent; outline:none;}
+  .wa-input-row button{ background:var(--soft); color:#fff; border:none; padding:0 20px; font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:1px;}
+  .wa-input-row button:hover{ filter:brightness(1.1);}
+  .wa-surveil-banner{ padding:9px 14px; font-family:'IBM Plex Mono',monospace; font-size:10.5px; color:var(--hard); background:#8f2d2d14; border-bottom:1px dashed var(--hard); display:flex; align-items:center; gap:6px;}
+  .wa-empty{ display:flex; align-items:center; justify-content:center; height:100%; color:var(--ink-soft); font-family:'IBM Plex Mono',monospace; font-size:12px; text-align:center; padding:20px;}
+
+  .wa-dice-btn{ background:var(--ink); color:#fff; border:none; width:44px; font-size:17px; cursor:pointer; flex-shrink:0;}
+  .wa-dice-btn:hover{ background:var(--accent);}
+  .roll-panel{ padding:10px 12px; background:var(--paper-dark); border-top:1px solid var(--paper-edge); flex-direction:column; gap:8px;}
+  .roll-row{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:8px;}
+  .roll-row select, .roll-row input[type=number], .roll-row input[type=text]{ font-size:12.5px; padding:6px; border:1px solid var(--paper-edge); background:#fff; flex:1; min-width:110px;}
+  .roll-check{ font-family:'IBM Plex Mono',monospace; font-size:11px; display:flex; align-items:center; gap:5px; white-space:nowrap;}
+  .roll-go-btn{ background:var(--hard); color:#fff; border:none; padding:10px; width:100%; font-family:'IBM Plex Mono',monospace; font-size:12px; letter-spacing:1px; cursor:pointer;}
+  .roll-go-btn:hover{ filter:brightness(1.1);}
+  .roll-go-btn:disabled{ opacity:0.7; cursor:default;}
+  .roll-go-btn.rolling{ animation: rollPulse .35s ease-in-out infinite; }
+  @keyframes rollPulse{ 0%,100%{ transform:scale(1); } 50%{ transform:scale(1.045); } }
+
+  .wa-roll-card{ align-self:center; max-width:88%; background:var(--paper); border:1.5px solid var(--ink); padding:10px 16px; text-align:center; box-shadow:0 2px 6px rgba(0,0,0,0.3); font-family:'IBM Plex Mono',monospace; margin:2px 0;}
+  .wa-roll-title{ font-size:10.5px; letter-spacing:1px; text-transform:uppercase; color:var(--ink-soft); margin-bottom:4px;}
+  .wa-roll-total{ font-family:'Special Elite',monospace; font-size:22px; line-height:1.2;}
+  .wa-roll-breakdown{ font-size:10.5px; color:var(--ink-soft); margin-top:4px;}
+  .wa-roll-badge{ display:inline-block; margin-top:7px; padding:3px 10px; font-size:10px; letter-spacing:1px;}
+  .wa-roll-badge.success{ background:#3d7a4a33; color:#245530;}
+  .wa-roll-badge.fail{ background:#a3333333; color:#7a2424;}
+
+  .wa-narration-card{ align-self:center; max-width:92%; background:linear-gradient(180deg,#2a2015,#1a1712); color:var(--paper); border:1.5px solid var(--intel); padding:12px 18px; text-align:center; box-shadow:0 3px 10px rgba(0,0,0,0.5); margin:4px 0;}
+  .wa-narration-title{ font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:2px; text-transform:uppercase; color:var(--intel); margin-bottom:6px;}
+  .wa-narration-text{ font-family:'Special Elite',monospace; font-size:14.5px; line-height:1.5; font-style:italic;}
+  .broadcast-textarea{ width:100%; font-size:14px; padding:10px; border:1px solid var(--paper-edge); background:rgba(255,255,255,0.4); min-height:100px; margin-bottom:10px;}
+  .broadcast-send-btn{ background:var(--intel); color:var(--redact); border:none; padding:11px; width:100%; font-family:'IBM Plex Mono',monospace; font-size:12px; letter-spacing:1px; font-weight:600;}
+  .broadcast-send-btn:hover{ filter:brightness(1.1);}
+
+  /* ---------- MURAL DE EVIDÊNCIAS ---------- */
+  .board-toolbar{ display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px; align-items:center;}
+  .board-toolbar button{ background:var(--ink); color:var(--paper); border:none; padding:8px 12px; font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.5px;}
+  .board-toolbar button:hover{ filter:brightness(1.15);}
+  .board-hint{ font-family:'IBM Plex Mono',monospace; font-size:10.5px; color:var(--ink-soft);}
+  .cork-board{
+    position:relative; width:100%; height:60vh; overflow:auto; -webkit-overflow-scrolling:touch;
+    background:
+      radial-gradient(circle, rgba(0,0,0,0.12) 1px, transparent 1.2px) 0 0/14px 14px,
+      #a9784f;
+    border:2px solid #6b4a2d;
+  }
+  .cork-inner{ position:relative; width:1400px; height:1000px;}
+  .evid-card{
+    position:absolute; width:150px; background:#fdf8e8; box-shadow:0 4px 10px rgba(0,0,0,0.4);
+    padding:10px 10px 8px 28px; cursor:grab; font-family:'IBM Plex Sans',sans-serif; user-select:none;
+  }
+  .evid-card:active{ cursor:grabbing;}
+  .evid-pin{
+    position:absolute; top:8px; left:8px; width:15px; height:15px; border-radius:50%;
+    background: radial-gradient(circle at 35% 30%, #e6543c, #8c1f13 70%); box-shadow:0 2px 3px rgba(0,0,0,0.5);
+    cursor:crosshair; touch-action:none; z-index:3;
+  }
+  .evid-pin:hover{ transform:scale(1.15); }
+  .evid-title{ font-family:'Special Elite',monospace; font-size:12.5px; margin-bottom:4px; color:var(--ink);}
+  .evid-text{ font-size:11px; color:var(--ink-soft); line-height:1.35; white-space:pre-wrap;}
+  .evid-del{ position:absolute; top:2px; right:4px; background:none; border:none; color:var(--hard); font-size:13px; cursor:pointer; display:none;}
+  .evid-card:hover .evid-del{ display:block;}
+  .cork-svg{ position:absolute; inset:0; width:100%; height:100%; pointer-events:none;}
+  .cork-svg .link-hit{ pointer-events:stroke; cursor:pointer;}
+  .new-card-form{ background:var(--paper-dark); border:1px solid var(--paper-edge); padding:12px; margin-bottom:10px; display:none; gap:8px; flex-direction:column;}
+  .new-card-form input, .new-card-form textarea{ font-size:13px; padding:7px; border:1px solid var(--paper-edge);}
+
+  @media (max-width:760px){
+    .wa-wrap{ height:72vh;}
+    .wa-list-pane{ width:100%; border-right:none;}
+    .wa-convo-pane{ position:absolute; inset:0; background:var(--paper); transform:translateX(100%); transition:transform .18s ease;}
+    .wa-wrap.mode-convo .wa-convo-pane{ transform:translateX(0);}
+    .wa-wrap.mode-convo .wa-list-pane{ display:none;}
+    .wa-back{ display:inline-block;}
+  }
+
+  @media (max-width:760px){
+    .grid-main{ grid-template-columns:1fr;}
+    .id-row{ grid-template-columns:1fr;}
+    .bottom-row{ grid-template-columns:1fr;}
+    .chat-wrap{ grid-template-columns:1fr; height:auto;}
+    .chan-list{ max-height:140px; border-right:none; border-bottom:1px solid var(--paper-edge);}
+    .win{ width:100%; max-height:100vh; top:0; height:100vh; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ===================== LOGIN ===================== -->
+<div id="loginScreen">
+  <div class="login-card">
+    <div class="login-kicker">Efeitos Colaterais — Terminal de Acesso</div>
+    <div class="login-title">Identifique-se</div>
+
+    <div class="login-field">
+      <label>Identidade</label>
+      <select id="loginUser"></select>
+    </div>
+    <div class="login-field">
+      <label>Senha</label>
+      <input type="password" id="loginPass" placeholder="••••••••">
+    </div>
+    <button class="login-btn" onclick="tryLogin()">Acessar caso</button>
+    <div class="login-error" id="loginError">Senha incorreta. Tente novamente.</div>
+    <div class="login-hint">PROTÓTIPO — senha de cada jogador = primeiro nome em minúsculas (ex: "camila"). Mestre = "mestre123". Isto é só para testar o fluxo; a versão real terá autenticação de verdade.</div>
+  </div>
+</div>
+
+<!-- ===================== EXPLORER ===================== -->
+<div id="explorerScreen">
+  <div class="taskbar">
+    <div class="brand"><span class="dot"></span>EFEITOS COLATERAIS <span style="opacity:0.5;font-weight:400;">/ caso #2019-114</span></div>
+    <div class="who">
+      <span id="taskbarUser"></span>
+      <span class="role-badge" id="taskbarRole"></span>
+      <button class="logout-btn" id="broadcastBtn" style="display:none;" onclick="openBroadcast()">📢 Narração</button>
+      <button class="logout-btn" onclick="logout()">Sair</button>
+    </div>
+  </div>
+  <div class="desktop" id="desktop"></div>
+</div>
+
+<div id="windowsLayer"></div>
+
+<script>
+/* ==================== DADOS ==================== */
+const COLORS = { Hard:'#8f2d2d', Intel:'#b8860b', Soft:'#2e6b64' };
+
+const SKILL_CATS = {
+  Hard: ['Pontaria','Combate Corpo-a-Corpo','Condução/Perseguição','Resistência'],
+  Intel: ['Perícia Forense','Investigação','Tecnologia','Rastreamento'],
+  Soft: ['Persuasão','Manipulação','Rede de Contatos','Primeiros Socorros']
+};
+const WOUND_STEPS = ['Ileso','Ferido Leve','Ferido Grave','Incapacitado','Morto'];
+
+const CHARACTERS = {
+  camila: {
+    id:'camila', name:'Camila Duarte', occupation:'Assistente Executiva', archetype:'Soft',
+    attrs:{Físico:2,Reflexo:3,Intelecto:3,Percepção:4,Empatia:5,Influência:4},
+    skills:{'Persuasão':4,'Manipulação':0,'Rede de Contatos':2,'Primeiros Socorros':2,
+            'Pontaria':0,'Combate Corpo-a-Corpo':0,'Condução/Perseguição':0,'Resistência':0,
+            'Perícia Forense':0,'Investigação':0,'Tecnologia':0,'Rastreamento':0},
+    karma:1, poolMax:3, poolSpent:1, wound:0, sharedWith:['marina'],
+    hook:'Cuida de documentos importantes da empresa — tem acesso a arquivos que poucos veem, e começa a desconfiar do que está guardando.',
+    equip:'Crachá da empresa · celular corporativo · caderno de anotações', notes:''
+  },
+  bruno: {
+    id:'bruno', name:'Bruno Alves', occupation:'Investigador de Polícia', archetype:'Hard',
+    attrs:{Físico:5,Reflexo:4,Intelecto:2,Percepção:4,Empatia:2,Influência:3},
+    skills:{'Pontaria':4,'Combate Corpo-a-Corpo':2,'Condução/Perseguição':0,'Resistência':2,
+            'Perícia Forense':0,'Investigação':0,'Tecnologia':0,'Rastreamento':0,
+            'Persuasão':0,'Manipulação':0,'Rede de Contatos':0,'Primeiros Socorros':0},
+    karma:-1, poolMax:3, poolSpent:0, wound:0, sharedWith:['diego'],
+    hook:'Policial cético, acostumado a ver o "cultivo clandestino" como caso simples. Vai ter que engolir o orgulho quando a farmacêutica aparecer no meio.',
+    equip:'Arma de serviço · distintivo · rádio', notes:''
+  },
+  rafael: {
+    id:'rafael', name:'Rafael Nunes', occupation:'Perito Criminal', archetype:'Intel',
+    attrs:{Físico:2,Reflexo:3,Intelecto:5,Percepção:5,Empatia:3,Influência:2},
+    skills:{'Perícia Forense':4,'Investigação':2,'Tecnologia':2,'Rastreamento':0,
+            'Pontaria':0,'Combate Corpo-a-Corpo':0,'Condução/Perseguição':0,'Resistência':0,
+            'Persuasão':0,'Manipulação':0,'Rede de Contatos':0,'Primeiros Socorros':0},
+    karma:0, poolMax:3, poolSpent:0, wound:0, sharedWith:[],
+    hook:'Encontra inconsistências nos laudos oficiais que não fecham com o que a farmacêutica reporta às autoridades.',
+    equip:'Kit forense · notebook · câmera', notes:''
+  },
+  marina: {
+    id:'marina', name:'Marina Costa', occupation:'Gerente de RH (Farmacêutica)', archetype:'Soft',
+    attrs:{Físico:2,Reflexo:2,Intelecto:4,Percepção:3,Empatia:4,Influência:5},
+    skills:{'Rede de Contatos':4,'Persuasão':2,'Manipulação':2,'Primeiros Socorros':0,
+            'Pontaria':0,'Combate Corpo-a-Corpo':0,'Condução/Perseguição':0,'Resistência':0,
+            'Perícia Forense':0,'Investigação':0,'Tecnologia':0,'Rastreamento':0},
+    karma:-1, poolMax:3, poolSpent:2, wound:0, sharedWith:['camila'],
+    hook:'Assinou NDAs que agora parecem esconder muito mais que segredo industrial. Conhece todo mundo na empresa — inclusive quem manda de verdade.',
+    equip:'Crachá de acesso nível 3 · agenda corporativa', notes:''
+  },
+  diego: {
+    id:'diego', name:'Diego Ferreira', occupation:'Policial (novato)', archetype:'Hard',
+    attrs:{Físico:4,Reflexo:5,Intelecto:2,Percepção:3,Empatia:3,Influência:3},
+    skills:{'Condução/Perseguição':4,'Pontaria':2,'Resistência':2,'Combate Corpo-a-Corpo':0,
+            'Perícia Forense':0,'Investigação':0,'Tecnologia':0,'Rastreamento':0,
+            'Persuasão':0,'Manipulação':0,'Rede de Contatos':0,'Primeiros Socorros':0},
+    karma:0, poolMax:3, poolSpent:1, wound:1, sharedWith:['bruno'],
+    hook:'Parceiro de Bruno, ainda idealista sobre o trabalho. A primeira ferida vai doer mais no ego do que no corpo.',
+    equip:'Arma de serviço · viatura · rádio', notes:''
+  }
+};
+
+const USERS = [
+  {id:'mestre', name:'Mestre', role:'mestre', password:'mestre123'},
+  ...Object.values(CHARACTERS).map(c => ({id:c.id, name:c.name, role:'player', password:c.id}))
+];
+
+let currentUser = null;
+
+/* Presença online ("visto por último") */
+const PRESENCE = {};
+USERS.forEach(u => PRESENCE[u.id] = {online:false, lastSeen:null});
+
+/* Ponteiros de leitura por canal/usuário, pra badge de não lidas */
+const READPOINTERS = {};
+function getReadPointer(chanId, userId){ return (READPOINTERS[chanId] && READPOINTERS[chanId][userId]) || 0; }
+function setReadPointer(chanId, userId){
+  if(!READPOINTERS[chanId]) READPOINTERS[chanId] = {};
+  READPOINTERS[chanId][userId] = getMsgs(chanId).length;
+}
+function unreadCount(chanId, userId){
+  return Math.max(0, getMsgs(chanId).length - getReadPointer(chanId, userId));
+}
+function totalUnread(userId){
+  return visibleChannels().reduce((sum,ch)=> sum + unreadCount(ch.id, userId), 0);
+}
+
+/* Estado da campanha (mestre edita) */
+const CAMPAIGN = {
+  act: 1,
+  synopsis: 'O grupo ainda está espalhado. Bruno e Diego investigam denúncias de um cultivo clandestino de cogumelos numa zona industrial. Camila e Marina cumprem suas funções normais na farmacêutica, sem saber que a empresa é o verdadeiro alvo. Rafael analisa laudos que não batem com o relatório oficial.',
+  sessionNotes: 'Sessão 3: grupo policial encontrou o laboratório improvisado. O "traficante" (Dr. Anselmo) não reagiu com violência — só pediu para não destruírem as amostras. Ninguém confia nele ainda.'
+};
+
+/* ==================== MURAL DE EVIDÊNCIAS ==================== */
+let evidCounter = 3;
+const EVIDENCE = {
+  cards: [
+    {id:'e1', x:60, y:70, title:'Dr. Anselmo', text:'"Traficante" — na verdade pesquisador. Não reagiu com violência na batida.'},
+    {id:'e2', x:340, y:120, title:'Advogado corporativo', text:'Chegou rápido demais no local. Jurídico da farmacêutica, não advogado autônomo.'},
+    {id:'e3', x:220, y:340, title:'Laudo inconsistente', text:'Perícia oficial não bate com o que a empresa reportou às autoridades.'}
+  ],
+  links: [['e1','e2'],['e2','e3']]
+};
+function newEvidId(){ evidCounter++; return 'e'+evidCounter; }
+
+/* ==================== CANAIS DE CHAT ==================== */
+const playerIds = Object.keys(CHARACTERS);
+let CHANNELS = [];
+function buildChannels(){
+  CHANNELS = [];
+  CHANNELS.push({id:'grupo', type:'group', name:'Sala do Grupo', participants:[...playerIds]});
+  playerIds.forEach(pid => {
+    CHANNELS.push({id:'dm-mestre-'+pid, type:'dm', name:'Mestre ↔ '+CHARACTERS[pid].name, participants:['mestre', pid]});
+  });
+  for(let i=0;i<playerIds.length;i++){
+    for(let j=i+1;j<playerIds.length;j++){
+      const a=playerIds[i], b=playerIds[j];
+      CHANNELS.push({id:'dm-'+a+'-'+b, type:'dm', name:CHARACTERS[a].name+' ↔ '+CHARACTERS[b].name, participants:[a,b]});
+    }
+  }
+}
+buildChannels();
+
+const MESSAGES = {
+  'grupo': [
+    {from:'bruno', text:'Alguém mais achou estranho a empresa mandar advogado pro local antes da perícia terminar?', time:'09:12'},
+    {from:'rafael', text:'Achei. E não foi advogado qualquer, era do jurídico corporativo. Rápido demais.', time:'09:14'}
+  ],
+  'dm-camila-marina': [
+    {from:'marina', text:'Você viu os arquivos que te passei? Não fala sobre isso no corredor.', time:'08:41'},
+    {from:'camila', text:'Vi. Isso não é sobre cogumelo nenhum, Marina.', time:'08:47'}
+  ],
+  'dm-mestre-bruno': [
+    {from:'mestre', text:'[nota do mestre] Bruno, faça um teste de Percepção quando quiser — tem algo no laboratório que ainda não foi mencionado pro grupo.', time:'09:20'}
+  ]
+};
+function getMsgs(chanId){ if(!MESSAGES[chanId]) MESSAGES[chanId]=[]; return MESSAGES[chanId]; }
+
+/* ==================== LOGIN ==================== */
+const loginSelect = document.getElementById('loginUser');
+USERS.forEach(u=>{
+  const opt = document.createElement('option');
+  opt.value = u.id; opt.textContent = u.role==='mestre' ? 'Mestre' : u.name;
+  loginSelect.appendChild(opt);
+});
+
+function tryLogin(){
+  const uid = loginSelect.value;
+  const pass = document.getElementById('loginPass').value;
+  const user = USERS.find(u=>u.id===uid);
+  if(user.password !== pass){
+    document.getElementById('loginError').style.display='block';
+    return;
+  }
+  document.getElementById('loginError').style.display='none';
+  currentUser = user;
+  PRESENCE[user.id] = {online:true, lastSeen:null};
+  enterExplorer();
+}
+document.getElementById('loginPass').addEventListener('keydown', e=>{ if(e.key==='Enter') tryLogin(); });
+
+function logout(){
+  if(currentUser) PRESENCE[currentUser.id] = {online:false, lastSeen: nowTime()};
+  currentUser = null;
+  document.getElementById('windowsLayer').innerHTML='';
+  document.getElementById('explorerScreen').style.display='none';
+  document.getElementById('loginScreen').style.display='flex';
+  document.getElementById('loginPass').value='';
+}
+
+/* ==================== EXPLORER ==================== */
+function enterExplorer(){
+  document.getElementById('loginScreen').style.display='none';
+  document.getElementById('explorerScreen').style.display='flex';
+  document.getElementById('taskbarUser').textContent = currentUser.role==='mestre' ? 'MESTRE' : currentUser.name.toUpperCase();
+  const roleBadge = document.getElementById('taskbarRole');
+  roleBadge.textContent = currentUser.role==='mestre' ? 'ACESSO TOTAL' : 'AGENTE DE CAMPO';
+  roleBadge.style.color = currentUser.role==='mestre' ? '#e6543c' : '#8fbf9a';
+  document.getElementById('broadcastBtn').style.display = currentUser.role==='mestre' ? 'inline-block' : 'none';
+  renderDesktop();
+}
+
+function canView(ownerId, user){
+  if(user.role==='mestre') return true;
+  if(user.id===ownerId) return true;
+  return CHARACTERS[ownerId].sharedWith.includes(user.id);
+}
+
+function renderDesktop(){
+  const desk = document.getElementById('desktop');
+  desk.innerHTML = '';
+
+  Object.values(CHARACTERS).forEach(c=>{
+    if(canView(c.id, currentUser)){
+      desk.appendChild(makeFolder(c.name, c.archetype.toUpperCase()+' · DOSSIÊ', COLORS[c.archetype], ()=>openDossie(c.id)));
+    } else {
+      desk.appendChild(makeLockedFolder(c.name));
+    }
+  });
+
+  desk.appendChild(makeFolder('Comunicações', 'INTERCEPTAÇÕES', '#5c5340', ()=>openChat(), 'badge-comunicacoes', totalUnread(currentUser.id)));
+  desk.appendChild(makeFolder('Mural de Evidências', 'QUADRO DE PISTAS', '#6b4a2d', ()=>openBoard()));
+
+  if(currentUser.role==='mestre'){
+    desk.appendChild(makeFolder('Painel do Mestre', 'VISÃO GERAL', '#b8860b', ()=>openMasterPanel()));
+    desk.appendChild(makeFolder('Referência Rápida', 'REGRAS', '#2e6b64', ()=>openReference()));
+  } else {
+    desk.appendChild(makeFolder('Sinopse do Ato', 'CONTEXTO', '#b8860b', ()=>openSynopsisReadOnly()));
+  }
+}
+
+function makeLockedFolder(name){
+  const btn = document.createElement('button');
+  btn.className='folder locked-folder';
+  btn.innerHTML = `<div class="folder-icon locked" style="--fcolor:#4a4438"></div><div class="folder-label">${name}</div><div class="folder-sub locked-sub">🔒 restrito</div>`;
+  btn.onclick = ()=> openWindow('Acesso Restrito', `
+    <div class="readonly-badge">🔒 Sem acesso</div>
+    <p style="font-family:'IBM Plex Sans',sans-serif;font-size:13.5px;margin-top:12px;line-height:1.6;">
+      Você não tem acesso ao dossiê de <strong>${name}</strong>. Esse agente ainda não compartilhou a ficha com você.
+      Peça pra ele liberar em "Compartilhar ficha com" na própria ficha dele.
+    </p>`);
+  return btn;
+}
+
+function makeFolder(label, sub, color, onOpen, badgeId, badgeCount){
+  const btn = document.createElement('button');
+  btn.className='folder';
+  const badgeHtml = (badgeCount>0) ? `<span class="folder-badge" id="${badgeId||''}">${badgeCount}</span>` : `<span class="folder-badge" id="${badgeId||''}" style="display:none;"></span>`;
+  btn.innerHTML = `${badgeId?badgeHtml:''}<div class="folder-icon" style="--fcolor:${color}"></div><div class="folder-label">${label}</div><div class="folder-sub">${sub}</div>`;
+  btn.onclick = onOpen;
+  return btn;
+}
+function refreshDesktopBadges(){
+  const badge = document.getElementById('badge-comunicacoes');
+  if(!badge || !currentUser) return;
+  const n = totalUnread(currentUser.id);
+  if(n>0){ badge.style.display='inline-block'; badge.textContent = n; }
+  else { badge.style.display='none'; }
+}
+
+/* ==================== WINDOW HELPERS ==================== */
+function openWindow(title, bodyHtml, widthNote){
+  const layer = document.getElementById('windowsLayer');
+  const win = document.createElement('div');
+  win.className='win';
+  win.innerHTML = `
+    <div class="win-bar">
+      <div class="win-title">📁 ${title}</div>
+      <button class="win-close" onclick="this.closest('.win').remove()">✕</button>
+    </div>
+    <div class="win-body">${bodyHtml}</div>
+  `;
+  layer.appendChild(win);
+  return win;
+}
+
+/* ==================== DOSSIÊ (FICHA) ==================== */
+function openDossie(id){
+  const c = CHARACTERS[id];
+  if(!canView(id, currentUser)) return makeLockedFolder(c.name).onclick();
+  const canEdit = currentUser.role==='mestre' || currentUser.id===id;
+  const isOwner = currentUser.id===id;
+  const color = COLORS[c.archetype];
+
+  let attrRows = Object.entries(c.attrs).map(([name,val])=>{
+    const mod = val-3;
+    return `<div class="attr"><span class="attr-name">${name}</span>
+      <input class="attr-val" value="${val}" ${canEdit?'':'disabled'} onchange="updateAttr('${id}','${name}',this.value)">
+      <span class="attr-mod">${mod>=0?'+':''}${mod}</span></div>`;
+  }).join('');
+
+  let skillHtml = Object.entries(SKILL_CATS).map(([cat, skills])=>{
+    const rows = skills.map(s=>{
+      const lvl = c.skills[s]||0;
+      const d1 = lvl>=2?'on':''; const d2 = lvl>=4?'on':'';
+      return `<div class="skill-row"><span>${s}</span><div class="skill-toggle">
+        <div class="dot ${d1}" ${canEdit?`onclick="toggleSkillDot('${id}','${s}',1,this)"`:''}></div>
+        <div class="dot ${d2}" ${canEdit?`onclick="toggleSkillDot('${id}','${s}',2,this)"`:''}></div>
+        </div></div>`;
+    }).join('');
+    return `<div class="skill-cat"><span class="skill-cat-title" style="background:${COLORS[cat]}">${cat}</span>${rows}</div>`;
+  }).join('');
+
+  const tierName = karmaTierName(c.karma);
+  let poolBoxes='';
+  for(let i=0;i<c.poolMax;i++){
+    poolBoxes += `<div class="pool-box ${i<c.poolSpent?'spent':''}" ${canEdit?`onclick="togglePool('${id}',${i},this)"`:''}></div>`;
+  }
+
+  let woundHtml = WOUND_STEPS.map((w,i)=>`<div class="wound-step ${i===c.wound?'current':''}" ${canEdit?`onclick="setWound('${id}',${i},this)"`:''}>${w}</div>`).join('');
+
+  const body = `
+    <div class="dossie-wrap ${karmaTierClass(c.karma)}">
+      <div class="stamp2">CONFIDENCIAL</div>
+      <header class="top">
+        <div>
+          <div class="kicker">Efeitos Colaterais — Dossiê de Agente</div>
+          <h1 class="sheetTitle">${c.name}</h1>
+        </div>
+        <div class="arche-tag" style="--cat-color:${color}">${c.archetype}</div>
+      </header>
+      ${!canEdit?'<div class="readonly-badge">Modo leitura — apenas visualização</div>':''}
+      <div class="id-row">
+        <div class="field"><label>Ocupação</label><input value="${c.occupation}" ${canEdit?'':'disabled'} onchange="CHARACTERS['${id}'].occupation=this.value"></div>
+        <div class="field"><label>Karma inicial</label><input value="${tierName}" disabled></div>
+        <div class="field" style="grid-column:1/-1;"><label>Gancho pessoal</label><textarea rows="2" ${canEdit?'':'disabled'} onchange="CHARACTERS['${id}'].hook=this.value">${c.hook}</textarea></div>
+      </div>
+      ${isOwner ? `
+      <div class="panel share-panel">
+        <h2>Compartilhar ficha com</h2>
+        <label class="share-check"><input type="checkbox" checked disabled> Mestre (obrigatório)</label>
+        ${playerIds.filter(pid=>pid!==id).map(pid=>`
+          <label class="share-check"><input type="checkbox" ${c.sharedWith.includes(pid)?'checked':''} onchange="toggleShare('${id}','${pid}',this.checked)"> ${CHARACTERS[pid].name}</label>
+        `).join('')}
+      </div>` : ''}
+      <div class="grid-main">
+        <div class="panel"><h2>Atributos</h2>${attrRows}<div class="gauge-label" style="margin-top:8px;">Mod = valor − 3</div></div>
+        <div class="panel"><h2>Perícias</h2>${skillHtml}<div class="gauge-label">● 1 clique = Treinado (+2) · 2 cliques = Especialista (+4)</div></div>
+        <div class="panel">
+          <h2>Karma</h2>
+          <div class="gauge-wrap">
+            <div class="gauge-value">${c.karma>=0?'+':''}${c.karma}</div>
+            <div class="gauge-tier">${tierName.toUpperCase()}</div>
+            <input type="range" min="-5" max="5" value="${c.karma}" ${canEdit?'':'disabled'} oninput="updateKarma('${id}',this.value,this)">
+          </div>
+          <h2 style="margin-top:12px;">Pool Ativo</h2>
+          <div class="pool">${poolBoxes}</div>
+          <div class="gauge-label">Recarrega em momentos-chave (decisão do mestre)</div>
+        </div>
+      </div>
+      <div class="bottom-row">
+        <div class="panel">
+          <h2>Trilha de Ferimento</h2>
+          <div class="wound-track">${woundHtml}</div>
+          <h2 style="margin-top:12px;">Equipamento</h2>
+          <div class="field"><textarea rows="3" ${canEdit?'':'disabled'} onchange="CHARACTERS['${id}'].equip=this.value">${c.equip}</textarea></div>
+        </div>
+        <div class="panel">
+          <h2>Observações</h2>
+          <div class="field"><textarea rows="9" placeholder="Anotações livres..." onchange="CHARACTERS['${id}'].notes=this.value">${c.notes}</textarea></div>
+        </div>
+      </div>
+    </div>
+  `;
+  openWindow(c.name+' — Dossiê', body);
+}
+
+function updateAttr(id, name, val){ CHARACTERS[id].attrs[name] = parseInt(val)||0; }
+function toggleShare(ownerId, otherId, checked){
+  const c = CHARACTERS[ownerId];
+  if(checked){ if(!c.sharedWith.includes(otherId)) c.sharedWith.push(otherId); }
+  else { c.sharedWith = c.sharedWith.filter(x=>x!==otherId); }
+}
+function toggleSkillDot(id, skill, dotIndex, el){
+  const c = CHARACTERS[id];
+  let lvl = c.skills[skill]||0;
+  const isOn = el.classList.contains('on');
+  if(dotIndex===1){ lvl = isOn ? 0 : 2; }
+  if(dotIndex===2){ lvl = isOn ? 2 : 4; }
+  c.skills[skill]=lvl;
+  // re-render just this window: simplest is close+reopen
+  el.closest('.win').remove();
+  openDossie(id);
+}
+function updateKarma(id, val, el){
+  CHARACTERS[id].karma = parseInt(val);
+  const win = el.closest('.win');
+  win.querySelector('.gauge-value').textContent = (val>=0?'+':'')+val;
+  win.querySelector('.gauge-tier').textContent = karmaTierName(parseInt(val)).toUpperCase();
+  win.querySelectorAll('.id-row input')[1].value = karmaTierName(parseInt(val));
+  const wrap = win.querySelector('.dossie-wrap');
+  wrap.className = 'dossie-wrap ' + karmaTierClass(parseInt(val));
+}
+function togglePool(id, index, el){
+  const c = CHARACTERS[id];
+  c.poolSpent = (index < c.poolSpent) ? index : index+1;
+  el.closest('.win').remove();
+  openDossie(id);
+}
+function setWound(id, index, el){
+  CHARACTERS[id].wound = index;
+  el.closest('.win').remove();
+  openDossie(id);
+}
+function karmaTierName(v){
+  if(v<=-2) return 'Corrupto';
+  if(v===-1) return 'Questionável';
+  if(v===0) return 'Neutro';
+  if(v===1) return 'Íntegro';
+  return 'Exemplar';
+}
+function karmaTierClass(v){
+  if(v<=-2) return 'tier-corrupto';
+  if(v===-1) return 'tier-questionavel';
+  if(v===0) return 'tier-neutro';
+  if(v===1) return 'tier-integro';
+  return 'tier-exemplar';
+}
+
+/* ==================== PAINEL DO MESTRE ==================== */
+function openMasterPanel(){
+  let cards = Object.values(CHARACTERS).map(c=>{
+    const tier = karmaTierName(c.karma);
+    return `<div class="mini-card" style="--cat-color:${COLORS[c.archetype]}" onclick="this.closest('.win').remove();openDossie('${c.id}')">
+      <div class="mini-name">${c.name}</div>
+      <div class="mini-occ">${c.archetype.toUpperCase()} · ${c.occupation}</div>
+      <div class="mini-row"><span>Karma</span><span>${c.karma>=0?'+':''}${c.karma} (${tier})</span></div>
+      <div class="mini-row"><span>Pool ativo</span><span>${c.poolMax-c.poolSpent}/${c.poolMax}</span></div>
+      <div class="mini-wound w${c.wound}">${WOUND_STEPS[c.wound]}</div>
+    </div>`;
+  }).join('');
+
+  const body = `
+    <h1 class="sheetTitle" style="margin-bottom:14px;">Painel do Mestre</h1>
+    <div class="master-grid">${cards}</div>
+
+    <div class="act-box">
+      <h2 style="font-family:'Special Elite',monospace;font-size:14px;margin:0 0 8px;">Ato Atual</h2>
+      <select id="actSelect" onchange="CAMPAIGN.act=parseInt(this.value)">
+        <option value="1" ${CAMPAIGN.act===1?'selected':''}>1 — 2019: Investigação</option>
+        <option value="2" ${CAMPAIGN.act===2?'selected':''}>2 — Virada: a farmacêutica</option>
+        <option value="3" ${CAMPAIGN.act===3?'selected':''}>3 — 2020: Clímax na pandemia</option>
+        <option value="4" ${CAMPAIGN.act===4?'selected':''}>4 — Epílogo: a cura (incerta)</option>
+      </select>
+      <div class="field"><label>Sinopse (visível aos jogadores)</label><textarea rows="4" onchange="CAMPAIGN.synopsis=this.value">${CAMPAIGN.synopsis}</textarea></div>
+      <div class="field" style="margin-top:10px;"><label>Notas de sessão (só mestre)</label><textarea rows="5" onchange="CAMPAIGN.sessionNotes=this.value">${CAMPAIGN.sessionNotes}</textarea></div>
+    </div>
+  `;
+  openWindow('Painel do Mestre', body);
+}
+
+function openSynopsisReadOnly(){
+  const body = `
+    <h1 class="sheetTitle" style="margin-bottom:6px;">Ato ${CAMPAIGN.act}</h1>
+    <div class="readonly-badge">Definido pelo mestre</div>
+    <div class="field" style="margin-top:12px;"><label>Sinopse</label><textarea rows="6" disabled>${CAMPAIGN.synopsis}</textarea></div>
+  `;
+  openWindow('Sinopse do Ato', body);
+}
+
+/* ==================== REFERÊNCIA RÁPIDA ==================== */
+function openReference(){
+  const body = `
+    <h1 class="sheetTitle" style="margin-bottom:14px;">Referência Rápida</h1>
+    <div class="ref-block">
+      <h3>Fórmula de teste</h3>
+      <div class="formula">d20 + Atributo + Perícia + Karma (passivo) vs Dificuldade</div>
+      <div class="note-small">Perícia: Destreinado +0 · Treinado +2 · Especialista +4</div>
+    </div>
+    <div class="ref-block">
+      <h3>Dificuldade (editar conforme sua mesa)</h3>
+      <table class="ref-table">
+        <tr><td>Trivial</td><td>8</td></tr>
+        <tr><td>Fácil</td><td>11</td></tr>
+        <tr><td>Médio</td><td>14</td></tr>
+        <tr><td>Difícil</td><td>17</td></tr>
+        <tr><td>Muito Difícil</td><td>20</td></tr>
+        <tr><td>Quase Impossível</td><td>23</td></tr>
+      </table>
+      <div class="note-small">Placeholder — a instrução do projeto não fixou esses números; ajuste livremente.</div>
+    </div>
+    <div class="ref-block">
+      <h3>Karma (passivo)</h3>
+      <table class="ref-table">
+        <tr><td>Corrupto</td><td>−2 a −5</td></tr>
+        <tr><td>Questionável</td><td>−1</td></tr>
+        <tr><td>Neutro</td><td>0</td></tr>
+        <tr><td>Íntegro</td><td>+1</td></tr>
+        <tr><td>Exemplar</td><td>+2 a +5</td></tr>
+      </table>
+    </div>
+    <div class="ref-block">
+      <h3>Karma (pool ativo)</h3>
+      <div class="note-small">Gastável tipo Vontade: reroll, converter falha, resistir manipulação. Recarrega só em momentos-chave por decisão do mestre.</div>
+    </div>
+    <div class="ref-block">
+      <h3>Trilha de ferimento</h3>
+      <div class="note-small">Ileso → Ferido Leve → Ferido Grave → Incapacitado → Morto. Acerto certeiro pode pular direto pra Grave/Morto. Acertar ≠ machucar: dano corpo-a-corpo usa Físico; à distância usa perícia + atributo mental/instintivo.</div>
+    </div>
+  `;
+  openWindow('Referência Rápida', body);
+}
+
+const ATTR_LIST = ['Físico','Reflexo','Intelecto','Percepção','Empatia','Influência'];
+function openBroadcast(){
+  const body = `
+    <p style="font-family:'IBM Plex Sans',sans-serif;font-size:13px;color:var(--ink-soft);margin-top:0;">
+      Uma narração aparece pra todo mundo na Sala do Grupo, com destaque — use pra cortes de cena, eventos que afetam todo o grupo de uma vez.
+    </p>
+    <textarea class="broadcast-textarea" id="broadcastText" placeholder="Ex: A luz do laboratório pisca duas vezes e apaga. Vocês ouvem passos vindos do corredor..."></textarea>
+    <button class="broadcast-send-btn" onclick="sendBroadcast()">📢 Transmitir para o grupo</button>
+  `;
+  openWindow('Narração do Mestre', body);
+}
+function sendBroadcast(){
+  const box = document.getElementById('broadcastText');
+  const text = box.value.trim();
+  if(!text) return;
+  getMsgs('grupo').push({type:'narration', from:'mestre', text, time: nowTime()});
+  setReadPointer('grupo', currentUser.id);
+  box.closest('.win').remove();
+  refreshDesktopBadges();
+}
+function nowTime(){
+  const now = new Date();
+  return now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0');
+}
+
+/* ==================== CHAT (estilo WhatsApp) ==================== */
+let activeChannel = null;
+let chatWinRef = null;
+
+function visibleChannels(){
+  if(currentUser.role==='mestre') return CHANNELS;
+  return CHANNELS.filter(ch => ch.participants.includes(currentUser.id));
+}
+function isIntercept(ch){
+  return currentUser.role==='mestre' && ch.type==='dm' && !ch.participants.includes('mestre');
+}
+function getParticipantMeta(id){
+  if(id==='mestre') return {name:'Mestre', color:'#1a1712', initials:'M'};
+  const c = CHARACTERS[id];
+  return {name:c.name, color:COLORS[c.archetype], initials:c.name.split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase()};
+}
+
+function openChat(){
+  activeChannel = null;
+  const body = `
+    <div class="wa-wrap" id="waWrap">
+      <div class="wa-list-pane" id="waList"></div>
+      <div class="wa-convo-pane" id="waConvo"><div class="wa-empty">Selecione uma conversa à esquerda</div></div>
+    </div>
+  `;
+  chatWinRef = openWindow('Comunicações', body);
+  renderChatList(chatWinRef);
+}
+
+function renderChatList(win){
+  const listEl = win.querySelector('#waList');
+  const chans = visibleChannels();
+  let html = '';
+  if(currentUser.role==='mestre'){
+    const mine = chans.filter(c => c.type==='group' || c.participants.includes('mestre'));
+    const intercepts = chans.filter(c => c.type==='dm' && !c.participants.includes('mestre'));
+    html += '<div class="wa-section-label">Conversas</div>';
+    html += mine.map(chatListItem).join('');
+    html += '<div class="wa-section-label intercept">🔴 Interceptações (leitura)</div>';
+    html += intercepts.map(chatListItem).join('') || '<div class="wa-item-preview" style="padding:0 12px 10px;">Nenhuma conversa privada entre jogadores ainda.</div>';
+  } else {
+    html += '<div class="wa-section-label">Conversas</div>';
+    html += chans.map(chatListItem).join('');
+  }
+  listEl.innerHTML = html;
+}
+
+function presenceLabel(userId){
+  const p = PRESENCE[userId];
+  if(!p) return '';
+  if(p.online) return 'online';
+  return p.lastSeen ? ('visto por último às '+p.lastSeen) : 'ainda não apareceu';
+}
+
+function chatListItem(ch){
+  const msgs = getMsgs(ch.id);
+  const last = msgs[msgs.length-1];
+  let avatarHtml, title;
+  if(ch.type==='group'){
+    avatarHtml = `<div class="wa-avatar-wrap"><div class="wa-avatar" style="background:#5c5340;">👥</div></div>`;
+    title = ch.name;
+  } else {
+    const otherId = ch.participants.find(p=>p!==currentUser.id) || ch.participants[0];
+    const meta = getParticipantMeta(otherId);
+    const isOnline = PRESENCE[otherId] && PRESENCE[otherId].online;
+    avatarHtml = `<div class="wa-avatar-wrap"><div class="wa-avatar" style="background:${meta.color}">${meta.initials}</div><span class="presence-dot ${isOnline?'online':''}"></span></div>`;
+    title = (currentUser.role==='mestre' && !ch.participants.includes('mestre')) ? ch.name : meta.name;
+  }
+  const intercept = isIntercept(ch);
+  const previewText = last ? (
+    last.type==='roll' ? `🎲 ${last.roller} rolou ${last.total}` :
+    last.type==='narration' ? `📢 Narração: ${last.text.length>28?last.text.slice(0,28)+'…':last.text}` :
+    (last.text.length>34 ? last.text.slice(0,34)+'…' : last.text)
+  ) : 'Sem mensagens ainda';
+  const time = last ? (last.time||'') : '';
+  const unread = unreadCount(ch.id, currentUser.id);
+  return `<div class="wa-item ${intercept?'wa-item-intercept':''} ${ch.id===activeChannel?'active':''}" onclick="openConversation('${ch.id}')">
+    ${avatarHtml}
+    <div class="wa-item-body">
+      <div class="wa-item-top"><span class="wa-item-name ${unread>0?'unread':''}">${title}</span><span class="wa-item-time">${time}</span></div>
+      <div class="wa-item-preview" style="display:flex;justify-content:space-between;align-items:center;gap:6px;">
+        <span>${intercept?'<span class="wa-item-tag">🔴 grampo · </span>':''}${previewText}</span>
+        ${unread>0?`<span class="wa-badge-count">${unread}</span>`:''}
+      </div>
+    </div>
+  </div>`;
+}
+
+function openConversation(chanId){
+  activeChannel = chanId;
+  chatWinRef.querySelector('#waWrap').classList.add('mode-convo');
+  setReadPointer(chanId, currentUser.id);
+  renderChatList(chatWinRef);
+  renderConversation(chatWinRef);
+  refreshDesktopBadges();
+}
+function backToList(){
+  chatWinRef.querySelector('#waWrap').classList.remove('mode-convo');
+}
+
+function renderConversation(win){
+  const ch = CHANNELS.find(c=>c.id===activeChannel);
+  const convoEl = win.querySelector('#waConvo');
+  if(!ch){ convoEl.innerHTML = '<div class="wa-empty">Selecione uma conversa</div>'; return; }
+  const intercept = isIntercept(ch);
+  let headerTitle, headerSub='', avatarHtml;
+  if(ch.type==='group'){
+    const onlineCount = playerIds.filter(pid=>PRESENCE[pid] && PRESENCE[pid].online).length + (PRESENCE['mestre'] && PRESENCE['mestre'].online ? 1:0);
+    headerTitle='Sala do Grupo'; headerSub = onlineCount+' online agora';
+    avatarHtml = `<div class="wa-avatar small" style="background:#ffffff33;">👥</div>`;
+  } else {
+    const otherId = ch.participants.find(p=>p!==currentUser.id) || ch.participants[0];
+    const meta = getParticipantMeta(otherId);
+    avatarHtml = `<div class="wa-avatar small" style="background:${meta.color}">${meta.initials}</div>`;
+    if(intercept){
+      const [a,b] = ch.participants;
+      headerTitle = ch.name;
+      headerSub = `${getParticipantMeta(a).name}: ${presenceLabel(a)} · ${getParticipantMeta(b).name}: ${presenceLabel(b)}`;
+    }
+    else { headerTitle = meta.name; headerSub = presenceLabel(otherId); }
+  }
+
+  const msgsHtml = getMsgs(ch.id).map(m=>{
+    if(m.type==='roll') return renderRollCard(m);
+    if(m.type==='narration') return `<div class="wa-narration-card"><div class="wa-narration-title">📢 Narração do Mestre</div><div class="wa-narration-text">${m.text}</div><div class="wa-bubble-time" style="text-align:center;color:#ffffff77;margin-top:6px;">${m.time||''}</div></div>`;
+    const meta = getParticipantMeta(m.from);
+    const side = intercept
+      ? (ch.participants.indexOf(m.from)===0 ? 'out' : 'in')
+      : (m.from===currentUser.id ? 'out' : 'in');
+    const showSender = ch.type==='group' || intercept;
+    return `<div class="wa-bubble ${side} ${intercept?'intercepted':''}">
+      ${showSender?`<div class="wa-bubble-sender" style="color:${meta.color}">${meta.name}</div>`:''}
+      ${m.text}
+      <div class="wa-bubble-time">${m.time||''}</div>
+    </div>`;
+  }).join('') || '<div class="wa-empty">Sem mensagens ainda.</div>';
+
+  convoEl.innerHTML = `
+    <div class="wa-convo-header ${intercept?'intercept':''}">
+      <button class="wa-back" onclick="backToList()">←</button>
+      ${avatarHtml}
+      <div>
+        <div class="wa-convo-title">${headerTitle}</div>
+        ${headerSub?`<div class="wa-convo-sub">${headerSub}</div>`:''}
+      </div>
+    </div>
+    ${intercept?`<div class="wa-surveil-banner">🔴 MODO VIGILÂNCIA — conversa privada entre jogadores, leitura apenas</div>`:''}
+    <div class="wa-msgs ${intercept?'intercept':''}" id="waMsgs">${msgsHtml}</div>
+    ${intercept?'':`<div class="roll-panel" id="rollPanel-${ch.id}" style="display:none;">${rollPanelInner(ch.id)}</div>
+    <div class="wa-input-row">
+      <button class="wa-dice-btn" onclick="toggleRollPanel('${ch.id}')" title="Rolar dado">🎲</button>
+      <input type="text" id="waInputBox" placeholder="Escrever mensagem...">
+      <button onclick="sendChatMsg('${ch.id}')">Enviar</button>
+    </div>`}
+  `;
+  const msgsBox = convoEl.querySelector('#waMsgs');
+  msgsBox.scrollTop = msgsBox.scrollHeight;
+  if(!intercept){
+    const inp = convoEl.querySelector('#waInputBox');
+    inp.addEventListener('keydown', e=>{ if(e.key==='Enter') sendChatMsg(ch.id); });
+  }
+}
+
+function sendChatMsg(chanId){
+  const box = chatWinRef.querySelector('#waInputBox');
+  if(!box) return;
+  const text = box.value.trim();
+  if(!text) return;
+  getMsgs(chanId).push({from: currentUser.id, text, time: nowTime()});
+  setReadPointer(chanId, currentUser.id);
+  box.value='';
+  renderConversation(chatWinRef);
+  renderChatList(chatWinRef);
+}
+
+/* ---------- Rolagem de dados no chat ---------- */
+function attrSelectOptions(character){
+  return ATTR_LIST.map(a=>{
+    const mod = character.attrs[a]-3;
+    return `<option value="${a}">${a} (${mod>=0?'+':''}${mod})</option>`;
+  }).join('');
+}
+function skillSelectOptions(character){
+  let opts = '';
+  Object.entries(SKILL_CATS).forEach(([cat,skills])=>{
+    opts += `<optgroup label="${cat}">`;
+    skills.forEach(s=>{
+      const lvl = character.skills[s]||0;
+      opts += `<option value="${s}">${s} (${lvl>=0?'+':''}${lvl})</option>`;
+    });
+    opts += `</optgroup>`;
+  });
+  return opts;
+}
+function rollFieldsHtml(chanId, character){
+  if(character){
+    return `<div class="roll-row">
+      <select id="rollAttr-${chanId}">${attrSelectOptions(character)}</select>
+      <select id="rollSkill-${chanId}">${skillSelectOptions(character)}</select>
+    </div>`;
+  }
+  return `<div class="roll-row">
+      <input type="text" id="rollDesc-${chanId}" placeholder="O que está sendo testado (ex: Percepção do guarda)">
+    </div>
+    <div class="roll-row">
+      <input type="number" id="rollMod-${chanId}" placeholder="Modificador" value="0">
+    </div>`;
+}
+function rollPanelInner(chanId){
+  const isMestre = currentUser.role==='mestre';
+  const charForRoll = isMestre ? null : CHARACTERS[currentUser.id];
+  let mestreCharSelect = '';
+  if(isMestre){
+    const opts = playerIds.map(pid=>`<option value="${pid}">${CHARACTERS[pid].name}</option>`).join('');
+    mestreCharSelect = `<div class="roll-row"><select id="rollAs-${chanId}" onchange="refreshRollPanel('${chanId}')"><option value="">— manual / NPC —</option>${opts}</select></div>`;
+  }
+  const karmaVal = charForRoll ? charForRoll.karma : 0;
+  return `${mestreCharSelect}
+    <div id="rollFields-${chanId}">${rollFieldsHtml(chanId, charForRoll)}</div>
+    <div class="roll-row">
+      <label class="roll-check"><input type="checkbox" id="rollKarma-${chanId}" checked> Incluir Karma (${karmaVal>=0?'+':''}${karmaVal})</label>
+      <input type="number" id="rollDiff-${chanId}" placeholder="Dificuldade (opcional)">
+    </div>
+    <button class="roll-go-btn" id="rollGoBtn-${chanId}" onclick="performRoll('${chanId}')">🎲 Rolar d20</button>`;
+}
+function refreshRollPanel(chanId){
+  const sel = document.getElementById('rollAs-'+chanId);
+  const character = sel && sel.value ? CHARACTERS[sel.value] : null;
+  document.getElementById('rollFields-'+chanId).innerHTML = rollFieldsHtml(chanId, character);
+  const karmaLabel = chatWinRef.querySelector(`#rollPanel-${chanId} .roll-check`);
+  if(karmaLabel){
+    const karmaVal = character ? character.karma : 0;
+    karmaLabel.innerHTML = `<input type="checkbox" id="rollKarma-${chanId}" checked> Incluir Karma (${karmaVal>=0?'+':''}${karmaVal})`;
+  }
+}
+function toggleRollPanel(chanId, forceState){
+  const panel = chatWinRef.querySelector('#rollPanel-'+chanId);
+  if(!panel) return;
+  const show = forceState!==undefined ? forceState : panel.style.display==='none';
+  panel.style.display = show ? 'flex' : 'none';
+}
+function getRollCharacter(chanId){
+  if(currentUser.role!=='mestre') return CHARACTERS[currentUser.id];
+  const sel = document.getElementById('rollAs-'+chanId);
+  return sel && sel.value ? CHARACTERS[sel.value] : null;
+}
+function performRoll(chanId){
+  const btn = document.getElementById('rollGoBtn-'+chanId);
+  if(!btn || btn.disabled) return;
+  btn.disabled = true;
+  btn.classList.add('rolling');
+  const totalDuration = 3000;
+  const startTime = Date.now();
+  function tick(){
+    const elapsed = Date.now() - startTime;
+    if(elapsed >= totalDuration){
+      btn.classList.remove('rolling');
+      finalizeRoll(chanId, btn);
+      return;
+    }
+    btn.textContent = '🎲 ' + (Math.floor(Math.random()*20)+1);
+    const progress = elapsed / totalDuration;
+    const delay = 40 + progress*progress*320; // acelera devagar, desacelera bem no final
+    setTimeout(tick, delay);
+  }
+  tick();
+}
+function finalizeRoll(chanId, btn){
+  const character = getRollCharacter(chanId);
+  const karmaChk = document.getElementById('rollKarma-'+chanId);
+  const diffInput = document.getElementById('rollDiff-'+chanId);
+  const karmaIncluded = karmaChk ? karmaChk.checked : true;
+
+  let parts = [];
+  if(character){
+    const attrSel = document.getElementById('rollAttr-'+chanId);
+    const skillSel = document.getElementById('rollSkill-'+chanId);
+    const attrMod = character.attrs[attrSel.value]-3;
+    const skillMod = character.skills[skillSel.value]||0;
+    parts.push({label:attrSel.value, value:attrMod});
+    parts.push({label:skillSel.value, value:skillMod});
+    if(karmaIncluded) parts.push({label:'Karma', value:character.karma});
+  } else {
+    const desc = (document.getElementById('rollDesc-'+chanId).value || 'Teste').trim();
+    const mod = parseInt(document.getElementById('rollMod-'+chanId).value)||0;
+    parts.push({label:desc, value:mod});
+    if(karmaIncluded) parts.push({label:'Karma', value:0});
+  }
+
+  const d20 = Math.floor(Math.random()*20)+1;
+  const total = d20 + parts.reduce((s,p)=>s+p.value,0);
+  const rollerName = character ? character.name + (currentUser.role==='mestre' ? ' (via Mestre)' : '') : 'Mestre';
+  const difficulty = diffInput && diffInput.value ? parseInt(diffInput.value) : null;
+
+  getMsgs(chanId).push({
+    type:'roll', from: currentUser.id, time: nowTime(),
+    roller: rollerName, d20, parts, total, difficulty
+  });
+  setReadPointer(chanId, currentUser.id);
+
+  toggleRollPanel(chanId, false);
+  renderConversation(chatWinRef);
+  renderChatList(chatWinRef);
+}
+function renderRollCard(m){
+  const modsStr = m.parts.map(p=>(p.value>=0?' + ':' − ')+Math.abs(p.value)).join('');
+  const breakdown = m.parts.map(p=>`${p.label} ${p.value>=0?'+':''}${p.value}`).join(' · ');
+  let badge = '';
+  if(m.difficulty!=null){
+    const ok = m.total >= m.difficulty;
+    badge = `<div class="wa-roll-badge ${ok?'success':'fail'}">${ok?'SUCESSO':'FALHA'} vs dificuldade ${m.difficulty}</div>`;
+  }
+  return `<div class="wa-roll-card">
+    <div class="wa-roll-title">🎲 ${m.roller} rolou</div>
+    <div class="wa-roll-total">${m.d20}${modsStr} = ${m.total}</div>
+    <div class="wa-roll-breakdown">${breakdown}</div>
+    ${badge}
+    <div class="wa-bubble-time" style="text-align:center;margin-top:4px;">${m.time||''}</div>
+  </div>`;
+}
+
+/* ---------- Mural de Evidências ---------- */
+let boardWinRef = null;
+const PIN_OFFSET = 15; // centro do alfinete relativo ao canto do card
+
+function openBoard(){
+  const canEdit = currentUser.role==='mestre';
+  const body = `
+    ${canEdit ? `
+    <div class="board-toolbar">
+      <button onclick="toggleNewCardForm()">📌 Novo cartão</button>
+      <span class="board-hint">Arraste o card pra mover · arraste a agulha até outra agulha pra ligar · clique na linha pra desfazer.</span>
+    </div>
+    <div class="new-card-form" id="newCardForm">
+      <input type="text" id="newCardTitle" placeholder="Título (ex: nome, local, objeto)">
+      <textarea id="newCardText" rows="2" placeholder="Anotação..."></textarea>
+      <button onclick="addEvidCard()" style="align-self:flex-start;">Fixar no mural</button>
+    </div>` : `<div class="readonly-badge">🔒 Somente o mestre edita o mural</div>`}
+    <div class="cork-board" id="corkBoard">
+      <div class="cork-inner" id="corkInner">
+        <svg class="cork-svg" id="corkSvg"></svg>
+      </div>
+    </div>
+  `;
+  boardWinRef = openWindow('Mural de Evidências', body);
+  renderBoard();
+}
+
+function toggleNewCardForm(){
+  const f = document.getElementById('newCardForm');
+  f.style.display = (f.style.display==='flex') ? 'none' : 'flex';
+}
+
+function addEvidCard(){
+  const title = document.getElementById('newCardTitle').value.trim() || 'Sem título';
+  const text = document.getElementById('newCardText').value.trim();
+  EVIDENCE.cards.push({id:newEvidId(), x:80+Math.random()*300, y:60+Math.random()*250, title, text});
+  document.getElementById('newCardTitle').value='';
+  document.getElementById('newCardText').value='';
+  document.getElementById('newCardForm').style.display='none';
+  renderBoard();
+}
+
+function removeEvidCard(cardId){
+  EVIDENCE.cards = EVIDENCE.cards.filter(c=>c.id!==cardId);
+  EVIDENCE.links = EVIDENCE.links.filter(([a,b])=>a!==cardId && b!==cardId);
+  renderBoard();
+}
+
+function removeLink(a,b){
+  EVIDENCE.links = EVIDENCE.links.filter(([x,y])=> !((x===a&&y===b)||(x===b&&y===a)));
+  renderBoard();
+}
+
+function renderBoard(){
+  const canEdit = currentUser.role==='mestre';
+  const inner = boardWinRef.querySelector('#corkInner');
+  inner.querySelectorAll('.evid-card').forEach(el=>el.remove());
+
+  EVIDENCE.cards.forEach(c=>{
+    const card = document.createElement('div');
+    card.className = 'evid-card';
+    card.style.left = c.x+'px';
+    card.style.top = c.y+'px';
+    card.dataset.id = c.id;
+    card.innerHTML = `
+      <div class="evid-pin" data-id="${c.id}"></div>
+      ${canEdit?`<button class="evid-del" onclick="event.stopPropagation();removeEvidCard('${c.id}')">✕</button>`:''}
+      <div class="evid-title">${c.title}</div>
+      <div class="evid-text">${c.text||''}</div>
+    `;
+    if(canEdit){
+      makeCardDraggable(card, c);
+      makePinConnectable(card.querySelector('.evid-pin'), c.id);
+    }
+    inner.appendChild(card);
+  });
+  drawBoardLinks();
+}
+
+/* Arrastar o corpo do card = mover */
+function makeCardDraggable(card, cardData){
+  let startX, startY, origX, origY, dragging=false;
+  function down(e){
+    dragging = true;
+    card.style.touchAction = 'none';
+    const pt = e.touches ? e.touches[0] : e;
+    startX = pt.clientX; startY = pt.clientY;
+    origX = cardData.x; origY = cardData.y;
+    document.addEventListener('mousemove', move);
+    document.addEventListener('mouseup', up);
+    document.addEventListener('touchmove', move, {passive:false});
+    document.addEventListener('touchend', up);
+  }
+  function move(e){
+    if(!dragging) return;
+    if(e.cancelable) e.preventDefault();
+    const pt = e.touches ? e.touches[0] : e;
+    const dx = pt.clientX-startX, dy = pt.clientY-startY;
+    cardData.x = origX+dx; cardData.y = origY+dy;
+    card.style.left = cardData.x+'px';
+    card.style.top = cardData.y+'px';
+    drawBoardLinks();
+  }
+  function up(){
+    dragging = false;
+    card.style.touchAction = 'auto';
+    document.removeEventListener('mousemove', move);
+    document.removeEventListener('mouseup', up);
+    document.removeEventListener('touchmove', move);
+    document.removeEventListener('touchend', up);
+  }
+  card.addEventListener('mousedown', down);
+  card.addEventListener('touchstart', down, {passive:true});
+}
+
+/* Arrastar a partir da agulha = puxar linha até outra agulha pra conectar */
+function makePinConnectable(pinEl, cardId){
+  function down(e){
+    e.stopPropagation();
+    if(e.cancelable) e.preventDefault();
+    startConnectDrag(cardId, e);
+  }
+  pinEl.addEventListener('mousedown', down);
+  pinEl.addEventListener('touchstart', down, {passive:false});
+}
+
+function startConnectDrag(fromCardId, startEvent){
+  const svg = boardWinRef.querySelector('#corkSvg');
+  const inner = boardWinRef.querySelector('#corkInner');
+  const fromCard = EVIDENCE.cards.find(c=>c.id===fromCardId);
+  const originX = fromCard.x + PIN_OFFSET, originY = fromCard.y + PIN_OFFSET;
+
+  const tempLine = document.createElementNS('http://www.w3.org/2000/svg','line');
+  tempLine.setAttribute('stroke', '#a33');
+  tempLine.setAttribute('stroke-width', '2');
+  tempLine.setAttribute('stroke-dasharray', '6,4');
+  tempLine.setAttribute('opacity', '0.85');
+  tempLine.setAttribute('x1', originX); tempLine.setAttribute('y1', originY);
+  tempLine.setAttribute('x2', originX); tempLine.setAttribute('y2', originY);
+  svg.appendChild(tempLine);
+
+  function move(e){
+    if(e.cancelable) e.preventDefault();
+    const pt = e.touches ? e.touches[0] : e;
+    const rect = inner.getBoundingClientRect();
+    tempLine.setAttribute('x2', pt.clientX - rect.left);
+    tempLine.setAttribute('y2', pt.clientY - rect.top);
+  }
+  function up(e){
+    document.removeEventListener('mousemove', move);
+    document.removeEventListener('mouseup', up);
+    document.removeEventListener('touchmove', move);
+    document.removeEventListener('touchend', up);
+    tempLine.remove();
+
+    const pt = e.changedTouches ? e.changedTouches[0] : e;
+    const targetEl = document.elementFromPoint(pt.clientX, pt.clientY);
+    const targetPin = targetEl && targetEl.closest ? targetEl.closest('.evid-pin') : null;
+    if(targetPin){
+      const toCardId = targetPin.dataset.id;
+      if(toCardId && toCardId !== fromCardId){
+        const exists = EVIDENCE.links.some(([a,b])=> (a===fromCardId&&b===toCardId) || (a===toCardId&&b===fromCardId));
+        if(!exists){ EVIDENCE.links.push([fromCardId, toCardId]); renderBoard(); }
+      }
+    }
+  }
+  document.addEventListener('mousemove', move);
+  document.addEventListener('mouseup', up);
+  document.addEventListener('touchmove', move, {passive:false});
+  document.addEventListener('touchend', up);
+}
+
+function drawBoardLinks(){
+  const svg = boardWinRef.querySelector('#corkSvg');
+  const byId = {}; EVIDENCE.cards.forEach(c=>byId[c.id]=c);
+  let html = '';
+  EVIDENCE.links.forEach(([a,b])=>{
+    const ca = byId[a], cb = byId[b];
+    if(!ca||!cb) return;
+    const x1=ca.x+PIN_OFFSET, y1=ca.y+PIN_OFFSET, x2=cb.x+PIN_OFFSET, y2=cb.y+PIN_OFFSET;
+    html += `<line class="link-hit" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="transparent" stroke-width="16" onclick="removeLink('${a}','${b}')"/>`;
+    html += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#a33" stroke-width="2" opacity="0.75" style="pointer-events:none;"/>`;
+  });
+  svg.innerHTML = html;
+}
+</script>
+</body>
+</html>
