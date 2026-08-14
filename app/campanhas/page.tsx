@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/supabase/server";
+import { nameFromEmail } from "@/lib/auth/identity";
 import CampaignsClient from "./CampaignsClient";
 
 export const dynamic = "force-dynamic";
@@ -28,7 +29,9 @@ export default async function CampanhasPage() {
   return (
     <CampaignsClient
       campaigns={campaigns}
-      displayName={profile?.display_name ?? user.email ?? ""}
+      // O email é sintético; se não houver display_name, "rafael" é bem melhor
+      // de ler na tela que "rafael@efeitos.local".
+      displayName={profile?.display_name || nameFromEmail(user.email ?? "")}
     />
   );
 }

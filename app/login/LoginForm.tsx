@@ -1,29 +1,39 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabase/client";
+import { emailFromName, slugFromName } from "@/lib/auth/identity";
 
 export default function LoginForm() {
   const router = useRouter();
   const params = useSearchParams();
-  const [email, setEmail] = useState("");
+  const [name, setName] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
+  const slug = slugFromName(name);
+
   async function submit(e: React.FormEvent) {
     e.preventDefault();
+    if (!slug) {
+      setError("Digite seu nome.");
+      return;
+    }
+
     setBusy(true);
     setError(null);
 
-    const { error } = await supabaseBrowser().auth.signInWithPassword({ email, password });
+    const { error } = await supabaseBrowser().auth.signInWithPassword({
+      email: emailFromName(name),
+      password,
+    });
 
     if (error) {
       setError(
         error.message === "Invalid login credentials"
-          ? "Credenciais inválidas. Tente novamente."
+          ? "Nome ou senha não conferem."
           : error.message,
       );
       setBusy(false);
@@ -37,14 +47,16 @@ export default function LoginForm() {
   return (
     <form onSubmit={submit}>
       <div className="login-field">
-        <label htmlFor="email">E-mail</label>
+        <label htmlFor="name">Nome</label>
         <input
-          id="email"
-          type="email"
-          autoComplete="email"
+          id="name"
+          autoComplete="username"
+          autoCapitalize="none"
+          spellCheck={false}
           required
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          placeholder="rafael"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
         />
       </div>
       <div className="login-field">
@@ -64,8 +76,15 @@ export default function LoginForm() {
       </button>
       {error && <div className="login-error">{error}</div>}
       <div className="login-hint">
-        Primeira vez? <Link href="/cadastro">Criar identidade</Link>. Você entra numa mesa com o
-        código de convite que o mestre te passar.
+        {/* Mostrar o identificador tira o mistério quando o login falha —
+            dá pra ver na hora se o nome saiu diferente do combinado. */}
+        {slug ? (
+          <>
+            Você vai entrar como <strong>{emailFromName(name)}</strong>.
+          </>
+        ) : (
+          "Só o primeiro nome, sem sobrenome. Quem cria os acessos é o mestre."
+        )}
       </div>
     </form>
   );

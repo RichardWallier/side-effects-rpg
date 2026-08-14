@@ -71,14 +71,20 @@ Copie `.env.example` para `.env.local`:
 cp .env.example .env.local
 ```
 
-| Variável | Onde vive | Para quê |
-| --- | --- | --- |
-| `NEXT_PUBLIC_SUPABASE_URL` | client + servidor | URL do projeto |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | client + servidor | leitura e Realtime sob RLS |
-| `SUPABASE_SERVICE_ROLE_KEY` | **só servidor** | Route Handlers. Nunca prefixe com `NEXT_PUBLIC_` |
-| `RLS_CHECK_PASSWORD` | só local | senha dos usuários do seed (padrão `efeitos123`) |
+| Variável | Valor no painel | Onde vive | Para quê |
+| --- | --- | --- | --- |
+| `NEXT_PUBLIC_SUPABASE_URL` | Project URL | client + servidor | URL do projeto |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | **publishable key** (`sb_publishable_…`) | client + servidor | leitura e Realtime sob RLS |
+| `SUPABASE_SERVICE_ROLE_KEY` | **secret key** (`sb_secret_…`) | **só servidor** | Route Handlers. Nunca prefixe com `NEXT_PUBLIC_` |
+| `RLS_CHECK_PASSWORD` | — | só local | senha dos usuários do seed (padrão `efeitos123`) |
 
-As duas primeiras ficam em **Project Settings → API** no painel do Supabase.
+Tudo em **Project Settings → API / API Keys**. O Supabase renomeou as chaves: a
+*publishable key* é a antiga `anon` (segura no browser, sujeita a RLS) e a *secret
+key* é a antiga `service_role` (ignora RLS — só servidor). A secret não aparece no
+dropdown "Connect"; é preciso revelá-la em **API Keys**.
+
+Projeto antigo com chaves em formato JWT (`eyJhbGciOi…`) continua funcionando:
+use `anon` no lugar da publishable e `service_role` no lugar da secret.
 
 ## Setup do projeto Supabase free
 

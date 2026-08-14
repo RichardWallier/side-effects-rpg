@@ -9,7 +9,8 @@
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
     "rls:check": "tsx scripts/rls-check.ts",
-    "rls:test": "./scripts/rls-test.sh"
+    "rls:test": "./scripts/rls-test.sh",
+    "user:create": "tsx scripts/create-user.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.6.1",
