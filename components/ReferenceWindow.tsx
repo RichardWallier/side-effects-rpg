@@ -20,7 +20,7 @@ const KARMA_TIERS = [
 export function ReferenceWindow() {
   return (
     <>
-      <h1 className="sheetTitle" style={{ marginBottom: 14 }}>
+      <h1 className="sheetTitle" style={{ marginBottom: "0.875rem" }}>
         Referência Rápida
       </h1>
 

@@ -44,7 +44,7 @@ export function WallpaperWindow() {
 
   return (
     <>
-      <p style={{ fontSize: 13, color: "var(--ink-soft)", marginTop: 0 }}>
+      <p style={{ fontSize: "0.8125rem", color: "var(--ink-soft)", marginTop: 0 }}>
         Cole o link direto de uma imagem (imgur, catbox, Unsplash…). Nada é enviado pro servidor:
         o link fica guardado só neste navegador, por mesa.
       </p>

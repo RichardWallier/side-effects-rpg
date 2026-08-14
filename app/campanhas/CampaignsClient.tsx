@@ -87,7 +87,7 @@ export default function CampaignsClient({
       <div className="paper-sheet">
         <div className="stamp2">ARQUIVO</div>
         <div className="kicker">Efeitos Colaterais</div>
-        <h1 className="sheetTitle" style={{ marginBottom: 18 }}>
+        <h1 className="sheetTitle" style={{ marginBottom: "1.125rem" }}>
           Suas mesas
         </h1>
 
@@ -110,7 +110,7 @@ export default function CampaignsClient({
             ))}
           </div>
         ) : (
-          <p className="form-note" style={{ marginBottom: 22 }}>
+          <p className="form-note" style={{ marginBottom: "1.375rem" }}>
             Você ainda não está em nenhuma mesa. Entre com um código de convite ou crie a sua.
           </p>
         )}
@@ -139,7 +139,7 @@ export default function CampaignsClient({
                 required
                 value={inviteCode}
                 onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
-                style={{ letterSpacing: 3, fontFamily: "'IBM Plex Mono', monospace" }}
+                style={{ letterSpacing: "0.1875rem", fontFamily: "'IBM Plex Mono', monospace" }}
               />
             </div>
             <div className="login-field">

@@ -140,7 +140,7 @@ export function DossieWindow({ characterId }: { characterId: string }) {
               </div>
             );
           })}
-          <div className="gauge-label" style={{ marginTop: 8 }}>
+          <div className="gauge-label" style={{ marginTop: "0.5rem" }}>
             Mod = valor − 3
           </div>
         </div>
@@ -205,7 +205,7 @@ export function DossieWindow({ characterId }: { characterId: string }) {
             />
           </div>
 
-          <h2 style={{ marginTop: 12 }}>Pool Ativo</h2>
+          <h2 style={{ marginTop: "0.75rem" }}>Pool Ativo</h2>
           <div className="pool">
             {Array.from({ length: character.pool_max }, (_, i) => (
               <button
@@ -243,7 +243,7 @@ export function DossieWindow({ characterId }: { characterId: string }) {
             ))}
           </div>
 
-          <h2 style={{ marginTop: 12 }}>Equipamento</h2>
+          <h2 style={{ marginTop: "0.75rem" }}>Equipamento</h2>
           <div className="field">
             <CommitField
               rows={3}
@@ -275,7 +275,7 @@ export function LockedDossieWindow({ name }: { name: string }) {
   return (
     <>
       <div className="readonly-badge">🔒 Sem acesso</div>
-      <p style={{ fontSize: "13.5px", marginTop: 12, lineHeight: 1.6 }}>
+      <p style={{ fontSize: "0.84375rem", marginTop: "0.75rem", lineHeight: 1.6 }}>
         Você não tem acesso ao dossiê de <strong>{name}</strong>. Esse agente ainda não
         compartilhou a ficha com você. Peça pra ele liberar em “Compartilhar ficha com” na própria
         ficha dele.

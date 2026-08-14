@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { scaled } from "@/lib/ui/scale";
 
 interface OpenWindow {
   key: string;
@@ -8,6 +9,8 @@ interface OpenWindow {
   node: React.ReactNode;
   /** Ordem de empilhamento. Focar/reabrir sobe pro topo. */
   z: number;
+  /** Degrau da escada de abertura; vira `--cascade-i` no CSS. */
+  cascade: number;
 }
 
 /** Retângulo em px assumido depois do primeiro arraste/resize daquela janela. */
@@ -36,22 +39,36 @@ export function useWindows() {
 }
 
 /** Mesmo breakpoint do globals.css, onde a janela vira tela cheia. */
-const MOBILE = "(max-width: 760px)";
+const MOBILE = "(max-width: 1140px)";
 
+/* Medidas na base de 16px: `scaled()` traduz pra px reais, senão elas
+   encolheriam em relação à janela quando a escala da UI sobe. */
 const MIN_W = 320;
 const MIN_H = 180;
 /** Quanto da janela precisa continuar alcançável ao arrastar pra fora. */
 const KEEP_VISIBLE = 90;
 const BAR_H = 36;
 
+/** Quantos degraus a escada de abertura percorre antes de repetir. */
+const CASCADE_SLOTS = 5;
+
 const isMobile = () => window.matchMedia(MOBILE).matches;
 
 const topZ = (list: OpenWindow[]) => list.reduce((max, w) => Math.max(max, w.z), 0);
 
+/** Menor degrau livre: duas janelas abertas nunca coincidem, e fechar uma
+ *  devolve o degrau pro próximo `open` em vez de empurrar a escada pra baixo. */
+function freeCascade(list: OpenWindow[]): number {
+  const taken = new Set(list.map((w) => w.cascade));
+  for (let i = 0; i < CASCADE_SLOTS; i++) if (!taken.has(i)) return i;
+  return list.length % CASCADE_SLOTS;
+}
+
 function clampPos(x: number, y: number, w: number): { x: number; y: number } {
+  const keep = scaled(KEEP_VISIBLE);
   return {
-    x: Math.min(Math.max(x, KEEP_VISIBLE - w), window.innerWidth - KEEP_VISIBLE),
-    y: Math.min(Math.max(y, 0), window.innerHeight - BAR_H),
+    x: Math.min(Math.max(x, keep - w), window.innerWidth - keep),
+    y: Math.min(Math.max(y, 0), window.innerHeight - scaled(BAR_H)),
   };
 }
 
@@ -61,10 +78,11 @@ export function WindowManager({ children }: { children: React.ReactNode }) {
 
   const open = useCallback((key: string, title: string, node: React.ReactNode) => {
     setWindows((prev) => {
-      const next = { key, title, node, z: topZ(prev) + 1 };
-      return prev.some((w) => w.key === key)
-        ? prev.map((w) => (w.key === key ? next : w))
-        : [...prev, next];
+      const current = prev.find((w) => w.key === key);
+      // Reabrir não remexe a janela de lugar: só sobe pro topo.
+      const cascade = current ? current.cascade : freeCascade(prev);
+      const next = { key, title, node, z: topZ(prev) + 1, cascade };
+      return current ? prev.map((w) => (w.key === key ? next : w)) : [...prev, next];
     });
   }, []);
 
@@ -153,11 +171,11 @@ export function WindowManager({ children }: { children: React.ReactNode }) {
           const w =
             edge === "s"
               ? base.w
-              : Math.max(MIN_W, Math.min(start.w + dx, window.innerWidth - start.x));
+              : Math.max(scaled(MIN_W), Math.min(start.w + dx, window.innerWidth - start.x));
           const h =
             edge === "e"
               ? base.h
-              : Math.max(MIN_H, Math.min(start.h + dy, window.innerHeight - start.y));
+              : Math.max(scaled(MIN_H), Math.min(start.h + dy, window.innerHeight - start.y));
           return { ...prev, [key]: { ...base, w, h } };
         });
       };
@@ -203,7 +221,7 @@ export function WindowManager({ children }: { children: React.ReactNode }) {
                       maxHeight: "none",
                       transform: "none",
                     }
-                  : { zIndex: w.z }
+                  : ({ zIndex: w.z, "--cascade-i": w.cascade } as React.CSSProperties)
               }
               onPointerDown={() => focus(w.key)}
             >

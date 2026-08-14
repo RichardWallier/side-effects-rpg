@@ -24,7 +24,7 @@ export function BroadcastWindow({ onSent }: { onSent: () => void }) {
 
   return (
     <>
-      <p style={{ fontSize: 13, color: "var(--ink-soft)", marginTop: 0 }}>
+      <p style={{ fontSize: "0.8125rem", color: "var(--ink-soft)", marginTop: 0 }}>
         Uma narração aparece pra todo mundo na Sala do Grupo, com destaque — use pra cortes de
         cena, eventos que afetam todo o grupo de uma vez.
       </p>

@@ -10,7 +10,7 @@ export function MasterPanelWindow({ onOpenDossie }: { onOpenDossie: (id: string)
 
   return (
     <>
-      <h1 className="sheetTitle" style={{ marginBottom: 14 }}>
+      <h1 className="sheetTitle" style={{ marginBottom: "0.875rem" }}>
         Painel do Mestre
       </h1>
 
@@ -44,7 +44,7 @@ export function MasterPanelWindow({ onOpenDossie }: { onOpenDossie: (id: string)
       </div>
 
       <div className="act-box">
-        <h2 style={{ fontFamily: "'Special Elite', monospace", fontSize: 14, margin: "0 0 8px" }}>
+        <h2 style={{ fontFamily: "'Special Elite', monospace", fontSize: "0.875rem", margin: "0 0 0.5rem" }}>
           Ato Atual
         </h2>
         <select
@@ -66,7 +66,7 @@ export function MasterPanelWindow({ onOpenDossie }: { onOpenDossie: (id: string)
             onCommit={(synopsis) => patchCampaign({ synopsis })}
           />
         </div>
-        <div className="field" style={{ marginTop: 10 }}>
+        <div className="field" style={{ marginTop: "0.625rem" }}>
           <label>Notas de sessão (só mestre)</label>
           <CommitField
             rows={5}
@@ -87,11 +87,11 @@ export function SynopsisWindow() {
   const { campaign } = useCampaign();
   return (
     <>
-      <h1 className="sheetTitle" style={{ marginBottom: 6 }}>
+      <h1 className="sheetTitle" style={{ marginBottom: "0.375rem" }}>
         Ato {campaign.act}
       </h1>
       <div className="readonly-badge">Definido pelo mestre</div>
-      <div className="field" style={{ marginTop: 12 }}>
+      <div className="field" style={{ marginTop: "0.75rem" }}>
         <label>Sinopse</label>
         <textarea rows={6} disabled value={campaign.synopsis} readOnly />
       </div>

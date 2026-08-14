@@ -2,9 +2,15 @@
 
 import { useRef, useState } from "react";
 import { useCampaign } from "@/lib/campaign/CampaignProvider";
+import { uiScale } from "@/lib/ui/scale";
 import type { EvidenceCard } from "@/lib/game/types";
 
-/** Centro do alfinete relativo ao canto do cartão. */
+/* O banco guarda x/y do cartão na base de 16px, e o mural em rem cresce junto
+   com --ui-scale. Então tudo que vai pra tela é multiplicado pela escala, e o
+   arrasto (que chega em px reais) é dividido de volta antes de salvar. Assim as
+   posições já gravadas continuam valendo qualquer que seja a escala. */
+
+/** Centro do alfinete relativo ao canto do cartão, na mesma base. */
 const PIN_OFFSET = 15;
 
 interface TempLine {
@@ -25,6 +31,12 @@ export function BoardWindow() {
   const [temp, setTemp] = useState<TempLine | null>(null);
 
   const cardById = new Map(cards.map((c) => [c.id, c]));
+  const scale = uiScale();
+  /** Ponta da linha que sai do alfinete, já em px de tela. */
+  const pin = (card: EvidenceCard) => ({
+    x: (card.x + PIN_OFFSET) * scale,
+    y: (card.y + PIN_OFFSET) * scale,
+  });
 
   function toInner(clientX: number, clientY: number) {
     const rect = innerRef.current!.getBoundingClientRect();
@@ -43,7 +55,11 @@ export function BoardWindow() {
     const originY = card.y;
 
     const move = (ev: PointerEvent) => {
-      moveCard(card.id, originX + (ev.clientX - startX), originY + (ev.clientY - startY));
+      moveCard(
+        card.id,
+        originX + (ev.clientX - startX) / scale,
+        originY + (ev.clientY - startY) / scale,
+      );
     };
     const up = () => {
       el.removeEventListener("pointermove", move);
@@ -62,7 +78,7 @@ export function BoardWindow() {
     e.stopPropagation();
     e.preventDefault();
 
-    const origin = { x: card.x + PIN_OFFSET, y: card.y + PIN_OFFSET };
+    const origin = pin(card);
     setTemp({ fromId: card.id, x1: origin.x, y1: origin.y, x2: origin.x, y2: origin.y });
 
     const move = (ev: PointerEvent) => {
@@ -141,12 +157,9 @@ export function BoardWindow() {
               const a = cardById.get(l.card_a_id);
               const b = cardById.get(l.card_b_id);
               if (!a || !b) return null;
-              const coords = {
-                x1: a.x + PIN_OFFSET,
-                y1: a.y + PIN_OFFSET,
-                x2: b.x + PIN_OFFSET,
-                y2: b.y + PIN_OFFSET,
-              };
+              const from = pin(a);
+              const to = pin(b);
+              const coords = { x1: from.x, y1: from.y, x2: to.x, y2: to.y };
               return (
                 <g key={l.id}>
                   {isGM && (
@@ -154,14 +167,14 @@ export function BoardWindow() {
                       className="link-hit"
                       {...coords}
                       stroke="transparent"
-                      strokeWidth={16}
+                      strokeWidth={16 * scale}
                       onClick={() => void removeLink(l.card_a_id, l.card_b_id)}
                     />
                   )}
                   <line
                     {...coords}
                     stroke="#a33"
-                    strokeWidth={2}
+                    strokeWidth={2 * scale}
                     opacity={0.75}
                     style={{ pointerEvents: "none" }}
                   />
@@ -175,8 +188,8 @@ export function BoardWindow() {
                 x2={temp.x2}
                 y2={temp.y2}
                 stroke="#a33"
-                strokeWidth={2}
-                strokeDasharray="6,4"
+                strokeWidth={2 * scale}
+                strokeDasharray={`${6 * scale},${4 * scale}`}
                 opacity={0.85}
               />
             )}
@@ -186,7 +199,11 @@ export function BoardWindow() {
             <div
               key={card.id}
               className={`evid-card ${isGM ? "" : "readonly"}`}
-              style={{ left: card.x, top: card.y, touchAction: isGM ? "none" : undefined }}
+              style={{
+                left: card.x * scale,
+                top: card.y * scale,
+                touchAction: isGM ? "none" : undefined,
+              }}
               onPointerDown={(e) => startCardDrag(e, card)}
             >
               <div

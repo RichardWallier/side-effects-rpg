@@ -62,7 +62,7 @@ export function ChatWindow() {
                 <ChannelRow key={c.id} channel={c} activeId={activeId} onOpen={openChannel} />
               ))
             ) : (
-              <div className="wa-item-preview" style={{ padding: "0 12px 10px" }}>
+              <div className="wa-item-preview" style={{ padding: "0 0.75rem 0.625rem" }}>
                 Nenhuma conversa privada entre jogadores ainda.
               </div>
             )}
@@ -141,7 +141,12 @@ function ChannelRow({
         </div>
         <div
           className="wa-item-preview"
-          style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 6 }}
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            gap: "0.375rem",
+          }}
         >
           <span>
             {intercept && <span className="wa-item-tag">🔴 grampo · </span>}
@@ -176,7 +181,7 @@ function Conversation({ channel, onBack }: { channel: ChatChannel; onBack: () =>
   // no mobile isso subiria o teclado virtual em cima da conversa.
   // Este componente tem `key` por canal, então remonta a cada troca.
   useEffect(() => {
-    if (window.matchMedia("(max-width: 760px)").matches) return;
+    if (window.matchMedia("(max-width: 1140px)").matches) return;
     inputRef.current?.focus();
   }, []);
 
@@ -305,7 +310,7 @@ function MessageView({
             {ok ? "SUCESSO" : "FALHA"} vs dificuldade {difficulty}
           </div>
         )}
-        <div className="wa-bubble-time" style={{ textAlign: "center", marginTop: 4 }}>
+        <div className="wa-bubble-time" style={{ textAlign: "center", marginTop: "0.25rem" }}>
           {hhmm(message.created_at)}
         </div>
       </div>
@@ -319,7 +324,7 @@ function MessageView({
         <div className="wa-narration-text">{textOf(message)}</div>
         <div
           className="wa-bubble-time"
-          style={{ textAlign: "center", color: "#ffffff77", marginTop: 6 }}
+          style={{ textAlign: "center", color: "#ffffff77", marginTop: "0.375rem" }}
         >
           {hhmm(message.created_at)}
         </div>
