@@ -90,6 +90,14 @@ export function nextSkillLevel(current: number, dotIndex: 1 | 2): number {
   return current >= 4 ? 2 : 4;
 }
 
+export const DIE_SIDES = [4, 6, 8, 12, 20] as const;
+export type DieSides = (typeof DIE_SIDES)[number];
+
+export function rollDie(sides: DieSides): number {
+  return Math.floor(Math.random() * sides) + 1;
+}
+
+/** @deprecated use rollDie(20) — mantido só por compatibilidade de import. */
 export function rollD20(): number {
-  return Math.floor(Math.random() * 20) + 1;
+  return rollDie(20);
 }
