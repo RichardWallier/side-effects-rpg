@@ -81,7 +81,7 @@ export function DossieWindow({ characterId }: { characterId: string }) {
           <label>Karma inicial</label>
           <input value={tierName} disabled readOnly />
         </div>
-        <div className="field" style={{ gridColumn: "1/-1" }}>
+        <div className="field field-hook" style={{ gridColumn: "1/-1" }}>
           <label htmlFor="hook">Gancho pessoal</label>
           <CommitField
             id="hook"
