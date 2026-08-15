@@ -319,7 +319,11 @@ table.ref-table td, table.ref-table th { border-bottom: 0.0625rem dotted var(--p
 
 /* ---------- CHAT (estilo WhatsApp) ---------- */
 .wa-wrap { display: flex; height: 66vh; border: 0.0625rem solid var(--paper-edge); background: var(--paper); position: relative; overflow: hidden; }
-.wa-list-pane { width: 17.5rem; flex-shrink: 0; border-right: 0.0625rem solid var(--paper-edge); display: flex; flex-direction: column; overflow-y: auto; background: var(--paper); }
+.wa-list-pane { flex-shrink: 0; border-right: 0.0625rem solid var(--paper-edge); display: flex; flex-direction: column; overflow-y: auto; background: var(--paper); }
+.wa-list-resizer { flex-shrink: 0; width: 0.3125rem; margin: 0 -0.15625rem; cursor: col-resize; position: relative; z-index: 2; background: transparent; }
+.wa-list-resizer:hover, .wa-wrap.resizing .wa-list-resizer { background: var(--accent, #8f2d2d); opacity: 0.5; }
+.wa-wrap.resizing { cursor: col-resize; user-select: none; }
+.wa-wrap.resizing .wa-list-pane, .wa-wrap.resizing .wa-convo-pane { pointer-events: none; }
 .wa-section-label { font-family: 'IBM Plex Mono', monospace; font-size: 0.625rem; letter-spacing: 0.09375rem; text-transform: uppercase; color: var(--ink-soft); padding: 0.625rem 0.75rem 0.25rem; }
 .wa-section-label.intercept { color: var(--hard); display: flex; align-items: center; gap: 0.3125rem; }
 .wa-item { display: flex; gap: 0.625rem; padding: 0.625rem 0.75rem; cursor: pointer; border-bottom: 0.0625rem solid rgba(0,0,0,0.06); align-items: center; width: 100%; background: none; border-left: none; border-right: none; border-top: none; text-align: left; }
@@ -442,7 +446,8 @@ table.ref-table td, table.ref-table th { border-bottom: 0.0625rem dotted var(--p
 
 @media (max-width: 1140px) {
   .wa-wrap { height: 72vh; }
-  .wa-list-pane { width: 100%; border-right: none; }
+  .wa-list-pane { width: 100% !important; border-right: none; }
+  .wa-list-resizer { display: none; }
   .wa-convo-pane { position: absolute; inset: 0; background: var(--paper); transform: translateX(100%); transition: transform .18s ease; }
   .wa-wrap.mode-convo .wa-convo-pane { transform: translateX(0); }
   .wa-wrap.mode-convo .wa-list-pane { display: none; }
