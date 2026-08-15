@@ -5,9 +5,11 @@ import { useCampaign } from "@/lib/campaign/CampaignProvider";
 import {
   ATTR_LIST,
   DIE_SIDES,
+  MAX_DICE_COUNT,
+  MIN_DICE_COUNT,
   SKILL_CATS,
   attrMod,
-  rollDie,
+  rollDice,
   signed,
   type Archetype,
   type DieSides,
@@ -30,9 +32,10 @@ export function RollPanel({ channelId, onDone }: { channelId: string; onDone: ()
   const [withKarma, setWithKarma] = useState(true);
   const [difficulty, setDifficulty] = useState("");
   const [dieSides, setDieSides] = useState<DieSides>(20);
+  const [dieCount, setDieCount] = useState(1);
 
   const [rolling, setRolling] = useState(false);
-  const [face, setFace] = useState<number | null>(null);
+  const [face, setFace] = useState<number[] | null>(null);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
 
   useEffect(
@@ -59,7 +62,8 @@ export function RollPanel({ channelId, onDone }: { channelId: string; onDone: ()
       if (withKarma) parts.push({ label: "Karma", value: 0 });
     }
 
-    const dieResult = rollDie(dieSides);
+    const dieResults = rollDice(dieSides, dieCount);
+    const dieResult = dieResults.reduce((sum, v) => sum + v, 0);
     const total = dieResult + parts.reduce((sum, p) => sum + p.value, 0);
     const roller = character
       ? character.name + (isGM ? " (via Mestre)" : "")
@@ -68,6 +72,8 @@ export function RollPanel({ channelId, onDone }: { channelId: string; onDone: ()
     void sendRoll(channelId, {
       roller,
       dieSides,
+      dieCount,
+      dieResults,
       dieResult,
       parts,
       total,
@@ -91,7 +97,7 @@ export function RollPanel({ channelId, onDone }: { channelId: string; onDone: ()
         finalize();
         return;
       }
-      setFace(rollDie(dieSides));
+      setFace(rollDice(dieSides, dieCount));
       const progress = elapsed / ROLL_ANIMATION_MS;
       timers.current.push(setTimeout(tick, 40 + progress * progress * 320));
     };
@@ -156,6 +162,25 @@ export function RollPanel({ channelId, onDone }: { channelId: string; onDone: ()
       )}
 
       <div className="roll-row">
+        <div className="dice-count" role="group" aria-label="Quantidade de dados">
+          <button
+            type="button"
+            className="die-count-btn"
+            disabled={rolling || dieCount <= MIN_DICE_COUNT}
+            onClick={() => setDieCount((n) => Math.max(MIN_DICE_COUNT, n - 1))}
+          >
+            −
+          </button>
+          <span className="die-count-val">{dieCount}</span>
+          <button
+            type="button"
+            className="die-count-btn"
+            disabled={rolling || dieCount >= MAX_DICE_COUNT}
+            onClick={() => setDieCount((n) => Math.min(MAX_DICE_COUNT, n + 1))}
+          >
+            +
+          </button>
+        </div>
         <div className="die-select" role="group" aria-label="Tipo de dado">
           {DIE_SIDES.map((sides) => (
             <button
@@ -193,7 +218,9 @@ export function RollPanel({ channelId, onDone }: { channelId: string; onDone: ()
         disabled={rolling}
         onClick={performRoll}
       >
-        {rolling && face != null ? `🎲 ${face}` : `🎲 Rolar d${dieSides}`}
+        {rolling && face != null
+          ? `🎲 ${face.reduce((sum, v) => sum + v, 0)}`
+          : `🎲 Rolar ${dieCount > 1 ? `${dieCount}d${dieSides}` : `d${dieSides}`}`}
       </button>
     </div>
   );
