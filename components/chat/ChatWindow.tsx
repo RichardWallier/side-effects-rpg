@@ -8,6 +8,15 @@ import { RollPanel } from "./RollPanel";
 const hhmm = (iso: string) =>
   new Date(iso).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
 
+const LIST_PANE_KEY = "efeitos-colaterais:chat-list-width-rem";
+const LIST_PANE_DEFAULT_REM = 17.5;
+const LIST_PANE_MIN_REM = 11;
+const LIST_PANE_MAX_REM = 32;
+
+function rootFontSizePx(): number {
+  return Number.parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+}
+
 function previewOf(message: ChatMessage | undefined): string {
   if (!message) return "Sem mensagens ainda";
   if (isRollBody(message)) return `🎲 ${message.body.roller} rolou ${message.body.total}`;
@@ -23,6 +32,58 @@ export function ChatWindow() {
 
   const [activeId, setActiveId] = useState<string | null>(null);
   const [mobileConvo, setMobileConvo] = useState(false);
+
+  const [listWidthRem, setListWidthRem] = useState(LIST_PANE_DEFAULT_REM);
+  const dragState = useRef<{ startX: number; startWidthRem: number } | null>(null);
+  const [dragging, setDragging] = useState(false);
+
+  // Carrega a largura salva (por navegador, não por campanha — é preferência de UI).
+  useEffect(() => {
+    const saved = window.localStorage.getItem(LIST_PANE_KEY);
+    const parsed = saved ? Number.parseFloat(saved) : NaN;
+    if (Number.isFinite(parsed)) {
+      setListWidthRem(Math.min(LIST_PANE_MAX_REM, Math.max(LIST_PANE_MIN_REM, parsed)));
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!dragging) return;
+
+    function onMove(e: MouseEvent) {
+      if (!dragState.current) return;
+      const deltaPx = e.clientX - dragState.current.startX;
+      const deltaRem = deltaPx / rootFontSizePx();
+      const next = Math.min(
+        LIST_PANE_MAX_REM,
+        Math.max(LIST_PANE_MIN_REM, dragState.current.startWidthRem + deltaRem),
+      );
+      setListWidthRem(next);
+    }
+
+    function onUp() {
+      setDragging(false);
+      dragState.current = null;
+      setListWidthRem((w) => {
+        window.localStorage.setItem(LIST_PANE_KEY, String(w));
+        return w;
+      });
+    }
+
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+    return () => {
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+    };
+  }, [dragging]);
+
+  function startDrag(e: React.MouseEvent) {
+    // No modo mobile empilhado não há duas colunas pra redimensionar.
+    if (window.matchMedia("(max-width: 1140px)").matches) return;
+    e.preventDefault();
+    dragState.current = { startX: e.clientX, startWidthRem: listWidthRem };
+    setDragging(true);
+  }
 
   const active = visibleChannels.find((c) => c.id === activeId) ?? null;
   const activeCount = active ? messagesOf(active.id).length : 0;
@@ -47,8 +108,8 @@ export function ChatWindow() {
   };
 
   return (
-    <div className={`wa-wrap ${mobileConvo ? "mode-convo" : ""}`}>
-      <div className="wa-list-pane">
+    <div className={`wa-wrap ${mobileConvo ? "mode-convo" : ""} ${dragging ? "resizing" : ""}`}>
+      <div className="wa-list-pane" style={{ width: `${listWidthRem}rem` }}>
         <div className="wa-section-label">Conversas</div>
         {mine.map((c) => (
           <ChannelRow key={c.id} channel={c} activeId={activeId} onOpen={openChannel} />
@@ -69,6 +130,16 @@ export function ChatWindow() {
           </>
         )}
       </div>
+
+      <div
+        className="wa-list-resizer"
+        onMouseDown={startDrag}
+        onDoubleClick={() => {
+          setListWidthRem(LIST_PANE_DEFAULT_REM);
+          window.localStorage.setItem(LIST_PANE_KEY, String(LIST_PANE_DEFAULT_REM));
+        }}
+        title="Arrastar para redimensionar · duplo clique para restaurar"
+      />
 
       <div className="wa-convo-pane">
         {active ? (
