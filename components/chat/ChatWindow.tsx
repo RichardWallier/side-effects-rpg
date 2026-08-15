@@ -290,16 +290,18 @@ function MessageView({
   const { meId, metaOf, participantsOf } = useCampaign();
 
   if (isRollBody(message)) {
-    const { roller, d20, parts, total, difficulty } = message.body;
+    const { roller, dieSides, dieResult, parts, total, difficulty } = message.body;
     const mods = parts
       .map((p) => `${p.value >= 0 ? " + " : " − "}${Math.abs(p.value)}`)
       .join("");
     const ok = difficulty != null && total >= difficulty;
     return (
       <div className="wa-roll-card">
-        <div className="wa-roll-title">🎲 {roller} rolou</div>
+        <div className="wa-roll-title">
+          🎲 {roller} rolou d{dieSides ?? 20}
+        </div>
         <div className="wa-roll-total">
-          {d20}
+          {dieResult}
           {mods} = {total}
         </div>
         <div className="wa-roll-breakdown">

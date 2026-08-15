@@ -72,15 +72,7 @@ export interface RollPart {
   value: number;
 }
 
-export type MessageBody =
-  | { text: string }
-  | {
-      roller: string;
-      d20: number;
-      parts: RollPart[];
-      total: number;
-      difficulty: number | null;
-    };
+export type MessageBody = { text: string } | RollMessageBody;
 
 export interface ChatMessage {
   id: string;
@@ -121,7 +113,10 @@ export interface Profile {
 
 export interface RollMessageBody {
   roller: string;
-  d20: number;
+  /** Faces do dado rolado (4, 6, 8, 12 ou 20). Ausente = registro antigo, assume 20. */
+  dieSides?: number;
+  /** Resultado bruto do dado, antes dos modificadores. */
+  dieResult: number;
   parts: RollPart[];
   total: number;
   difficulty: number | null;

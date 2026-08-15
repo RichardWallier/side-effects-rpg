@@ -4,11 +4,13 @@ import { useEffect, useRef, useState } from "react";
 import { useCampaign } from "@/lib/campaign/CampaignProvider";
 import {
   ATTR_LIST,
+  DIE_SIDES,
   SKILL_CATS,
   attrMod,
-  rollD20,
+  rollDie,
   signed,
   type Archetype,
+  type DieSides,
 } from "@/lib/game/rules";
 import type { RollPart } from "@/lib/game/types";
 
@@ -27,6 +29,7 @@ export function RollPanel({ channelId, onDone }: { channelId: string; onDone: ()
   const [manualMod, setManualMod] = useState("0");
   const [withKarma, setWithKarma] = useState(true);
   const [difficulty, setDifficulty] = useState("");
+  const [dieSides, setDieSides] = useState<DieSides>(20);
 
   const [rolling, setRolling] = useState(false);
   const [face, setFace] = useState<number | null>(null);
@@ -56,15 +59,16 @@ export function RollPanel({ channelId, onDone }: { channelId: string; onDone: ()
       if (withKarma) parts.push({ label: "Karma", value: 0 });
     }
 
-    const d20 = rollD20();
-    const total = d20 + parts.reduce((sum, p) => sum + p.value, 0);
+    const dieResult = rollDie(dieSides);
+    const total = dieResult + parts.reduce((sum, p) => sum + p.value, 0);
     const roller = character
       ? character.name + (isGM ? " (via Mestre)" : "")
       : "Mestre";
 
     void sendRoll(channelId, {
       roller,
-      d20,
+      dieSides,
+      dieResult,
       parts,
       total,
       difficulty: difficulty ? Number.parseInt(difficulty, 10) : null,
@@ -87,7 +91,7 @@ export function RollPanel({ channelId, onDone }: { channelId: string; onDone: ()
         finalize();
         return;
       }
-      setFace(rollD20());
+      setFace(rollDie(dieSides));
       const progress = elapsed / ROLL_ANIMATION_MS;
       timers.current.push(setTimeout(tick, 40 + progress * progress * 320));
     };
@@ -152,6 +156,22 @@ export function RollPanel({ channelId, onDone }: { channelId: string; onDone: ()
       )}
 
       <div className="roll-row">
+        <div className="die-select" role="group" aria-label="Tipo de dado">
+          {DIE_SIDES.map((sides) => (
+            <button
+              key={sides}
+              type="button"
+              className={`die-btn ${dieSides === sides ? "active" : ""}`}
+              disabled={rolling}
+              onClick={() => setDieSides(sides)}
+            >
+              d{sides}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="roll-row">
         <label className="roll-check">
           <input
             type="checkbox"
@@ -173,7 +193,7 @@ export function RollPanel({ channelId, onDone }: { channelId: string; onDone: ()
         disabled={rolling}
         onClick={performRoll}
       >
-        {rolling && face != null ? `🎲 ${face}` : "🎲 Rolar d20"}
+        {rolling && face != null ? `🎲 ${face}` : `🎲 Rolar d${dieSides}`}
       </button>
     </div>
   );
