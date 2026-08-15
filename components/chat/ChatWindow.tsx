@@ -361,7 +361,13 @@ function MessageView({
   const { meId, metaOf, participantsOf } = useCampaign();
 
   if (isRollBody(message)) {
-    const { roller, dieSides, dieResult, parts, total, difficulty } = message.body;
+    const { roller, dieSides, dieCount, dieResults, dieResult, parts, total, difficulty } =
+      message.body;
+    const sides = dieSides ?? 20;
+    const count = dieCount ?? 1;
+    const results = dieResults ?? [dieResult];
+    const diceLabel = count > 1 ? `${count}d${sides}` : `d${sides}`;
+    const diceBreakdown = results.join(" + ");
     const mods = parts
       .map((p) => `${p.value >= 0 ? " + " : " − "}${Math.abs(p.value)}`)
       .join("");
@@ -369,10 +375,10 @@ function MessageView({
     return (
       <div className="wa-roll-card">
         <div className="wa-roll-title">
-          🎲 {roller} rolou d{dieSides ?? 20}
+          🎲 {roller} rolou {diceLabel}
         </div>
         <div className="wa-roll-total">
-          {dieResult}
+          {count > 1 ? `(${diceBreakdown})` : dieResult}
           {mods} = {total}
         </div>
         <div className="wa-roll-breakdown">

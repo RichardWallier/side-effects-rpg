@@ -93,8 +93,16 @@ export function nextSkillLevel(current: number, dotIndex: 1 | 2): number {
 export const DIE_SIDES = [4, 6, 8, 12, 20] as const;
 export type DieSides = (typeof DIE_SIDES)[number];
 
+export const MIN_DICE_COUNT = 1;
+export const MAX_DICE_COUNT = 10;
+
 export function rollDie(sides: DieSides): number {
   return Math.floor(Math.random() * sides) + 1;
+}
+
+export function rollDice(sides: DieSides, count: number): number[] {
+  const n = Math.min(MAX_DICE_COUNT, Math.max(MIN_DICE_COUNT, count));
+  return Array.from({ length: n }, () => rollDie(sides));
 }
 
 /** @deprecated use rollDie(20) — mantido só por compatibilidade de import. */

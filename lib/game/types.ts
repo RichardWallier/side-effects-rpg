@@ -115,7 +115,11 @@ export interface RollMessageBody {
   roller: string;
   /** Faces do dado rolado (4, 6, 8, 12 ou 20). Ausente = registro antigo, assume 20. */
   dieSides?: number;
-  /** Resultado bruto do dado, antes dos modificadores. */
+  /** Quantos dados foram rolados juntos. Ausente = registro antigo, assume 1. */
+  dieCount?: number;
+  /** Resultado de cada dado individual, na ordem rolada. Ausente = registro antigo, assume [dieResult]. */
+  dieResults?: number[];
+  /** Soma de todos os dados rolados (antes dos modificadores). */
   dieResult: number;
   parts: RollPart[];
   total: number;
